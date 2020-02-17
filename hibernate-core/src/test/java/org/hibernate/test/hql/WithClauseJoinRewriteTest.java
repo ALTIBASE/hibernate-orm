@@ -8,6 +8,8 @@ package org.hibernate.test.hql;
 
 import org.hibernate.Session;
 import org.hibernate.Transaction;
+import org.hibernate.dialect.AltibaseDialect;
+import org.hibernate.testing.SkipForDialect;
 import org.hibernate.testing.TestForIssue;
 import org.hibernate.testing.junit4.BaseCoreFunctionalTestCase;
 import org.junit.Test;
@@ -45,6 +47,7 @@ public class WithClauseJoinRewriteTest extends BaseCoreFunctionalTestCase {
 
     @Test
     @TestForIssue(jiraKey = "HHH-11230")
+    @SkipForDialect(value = AltibaseDialect.class, comment = "Altibase does not support multiple outer join")
     public void testInheritanceReAliasing() {
         Session s = openSession();
         Transaction tx = s.beginTransaction();

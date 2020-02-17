@@ -6,13 +6,10 @@
  */
 package org.hibernate.tool.schema.extract.internal;
 
-import java.sql.ResultSet;
-import java.sql.SQLException;
-
 /**
  * An SequenceInfomation for Altibase
  *
- * @author Chang Hoon Lee
+ * @author YounJung Park
  */
 public class SequenceInformationExtractorAltibaseDatabaseImpl extends SequenceInformationExtractorLegacyImpl {
 	/**

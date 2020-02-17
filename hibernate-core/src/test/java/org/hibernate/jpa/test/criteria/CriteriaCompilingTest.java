@@ -25,6 +25,7 @@ import org.hibernate.CacheMode;
 import org.hibernate.ScrollMode;
 import org.hibernate.ScrollableResults;
 import org.hibernate.Session;
+import org.hibernate.dialect.AltibaseDialect;
 import org.hibernate.jpa.test.BaseEntityManagerFunctionalTestCase;
 import org.hibernate.jpa.test.callbacks.RemoteControl;
 import org.hibernate.jpa.test.callbacks.Television;
@@ -44,7 +45,7 @@ import org.hibernate.jpa.test.metamodel.Product;
 import org.hibernate.jpa.test.metamodel.ShelfLife;
 import org.hibernate.jpa.test.metamodel.Spouse;
 
-import org.hibernate.testing.BeforeClassOnce;
+import org.hibernate.testing.SkipForDialect;
 import org.hibernate.testing.TestForIssue;
 import org.hibernate.testing.transaction.TransactionUtil;
 import org.junit.Assert;
@@ -98,6 +99,7 @@ public class CriteriaCompilingTest extends BaseEntityManagerFunctionalTestCase {
 	}
 
 	@Test
+	@SkipForDialect(AltibaseDialect.class)
 	public void testTrim() {
 		final String expectedResult = "David R. Vincent";
 
@@ -133,6 +135,7 @@ public class CriteriaCompilingTest extends BaseEntityManagerFunctionalTestCase {
 
 	@Test
 	@TestForIssue(jiraKey = "HHH-11393")
+	@SkipForDialect(AltibaseDialect.class)
 	public void testTrimAChar() {
 		TransactionUtil.doInJPA( this::entityManagerFactory, entityManager -> {
 			final CriteriaBuilder criteriaBuilder = entityManager.getCriteriaBuilder();

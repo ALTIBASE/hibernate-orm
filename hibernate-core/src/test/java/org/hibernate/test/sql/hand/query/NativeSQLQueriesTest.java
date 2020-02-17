@@ -27,6 +27,7 @@ import org.hibernate.Transaction;
 import org.hibernate.cfg.Configuration;
 import org.hibernate.cfg.Environment;
 import org.hibernate.dialect.AbstractHANADialect;
+import org.hibernate.dialect.AltibaseDialect;
 import org.hibernate.dialect.H2Dialect;
 import org.hibernate.dialect.MySQL5Dialect;
 import org.hibernate.engine.query.spi.sql.NativeSQLQueryReturn;
@@ -853,7 +854,8 @@ public class NativeSQLQueriesTest extends BaseCoreFunctionalTestCase {
 		s.close();
 	}
 
-	@SkipForDialect(value = AbstractHANADialect.class, comment = "On HANA, this returns a blob for the image column which doesn't get mapped to a byte[]")
+	@SkipForDialect(value = { AbstractHANADialect.class, AltibaseDialect.class },
+			comment = "This returns a blob for the image column which doesn't get mapped to a byte[]")
 	@Test
 	public void testImageTypeInSQLQuery() {
 		Session s = openSession();

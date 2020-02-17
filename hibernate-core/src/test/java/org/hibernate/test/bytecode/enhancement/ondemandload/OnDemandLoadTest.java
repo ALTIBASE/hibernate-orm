@@ -170,7 +170,7 @@ public class OnDemandLoadTest extends BaseCoreFunctionalTestCase {
     // --- //
 
     @Entity
-    @Table( name = "STORE" )
+    @Table( name = "\"STORE\"" )
     private static class Store {
         @Id
         Long id;

@@ -21,6 +21,7 @@ import org.hibernate.dialect.HSQLDialect;
 import org.hibernate.dialect.MariaDB103Dialect;
 import org.hibernate.dialect.Oracle8iDialect;
 import org.hibernate.dialect.SQLServer2012Dialect;
+import org.hibernate.dialect.AltibaseDialect;
 import org.hibernate.engine.spi.SessionImplementor;
 import org.hibernate.exception.GenericJDBCException;
 import org.hibernate.jdbc.Work;
@@ -41,7 +42,7 @@ public class SequenceValueExtractor {
 		else if ( dialect instanceof DB2Dialect ) {
 			queryString = "values PREVIOUS value for " + sequenceName;
 		}
-		else if ( dialect instanceof Oracle8iDialect ) {
+		else if ( dialect instanceof Oracle8iDialect || dialect instanceof AltibaseDialect) {
 			queryString = "select " + sequenceName + ".currval from dual";
 		}
 		else if ( dialect instanceof SQLServer2012Dialect ) {

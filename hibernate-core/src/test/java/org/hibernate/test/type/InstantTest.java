@@ -22,6 +22,7 @@ import javax.persistence.Column;
 import javax.persistence.Entity;
 import javax.persistence.Id;
 
+import org.hibernate.dialect.AltibaseDialect;
 import org.hibernate.dialect.MariaDBDialect;
 import org.hibernate.dialect.MySQLDialect;
 import org.hibernate.dialect.SybaseDialect;
@@ -83,8 +84,13 @@ public class InstantTest extends AbstractJavaTimeTypeTest<Instant, InstantTest.E
 				)
 				// => Also test DST start, just in case
 				.add( 2018, 3, 25, 1, 0, 0, 0, ZONE_PARIS )
-				.add( 2018, 3, 25, 2, 0, 0, 0, ZONE_PARIS )
-				.add( 2018, 9, 30, 2, 0, 0, 0, ZONE_AUCKLAND )
+				.skippedForDialects(
+						// MySQL/Mariadb/Sybase cannot store dates in 1600 in a timestamp.
+						Arrays.asList( AltibaseDialect.class ),
+						b -> b
+								.add( 2018, 3, 25, 2, 0, 0, 0, ZONE_PARIS )
+								.add( 2018, 9, 30, 2, 0, 0, 0, ZONE_AUCKLAND )
+				)
 				.add( 2018, 9, 30, 3, 0, 0, 0, ZONE_AUCKLAND )
 				// => Also test dates around 1905-01-01, because the code behaves differently before and after 1905
 				.add( 1904, 12, 31, 22, 59, 59, 999_999_999, ZONE_PARIS )

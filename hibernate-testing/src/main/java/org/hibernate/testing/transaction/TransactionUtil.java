@@ -27,6 +27,7 @@ import org.hibernate.Transaction;
 import org.hibernate.boot.registry.StandardServiceRegistry;
 import org.hibernate.boot.registry.StandardServiceRegistryBuilder;
 import org.hibernate.dialect.AbstractHANADialect;
+import org.hibernate.dialect.AltibaseDialect;
 import org.hibernate.dialect.Dialect;
 import org.hibernate.dialect.H2Dialect;
 import org.hibernate.dialect.MySQLDialect;
@@ -602,6 +603,12 @@ public class TransactionUtil {
 				try (Statement st = connection.createStatement()) {
 					//Prepared Statements fail for SET commands
 					st.execute(String.format( "SET LOCK WAIT %d", millis/1000 ));
+				}
+			}
+			else if( Dialect.getDialect() instanceof AltibaseDialect) {
+				try (Statement st = connection.createStatement()) {
+					//Prepared Statements fail for SET commands
+					st.execute(String.format( "ALTER SESSION SET QUERY_TIMEOUT=%d", millis/1000 ));
 				}
 			}
 			else {

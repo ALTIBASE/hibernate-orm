@@ -14,6 +14,7 @@ import javax.persistence.PersistenceException;
 import org.hibernate.Session;
 import org.hibernate.Transaction;
 import org.hibernate.criterion.Projections;
+import org.hibernate.dialect.AltibaseDialect;
 import org.hibernate.dialect.Oracle8iDialect;
 import org.hibernate.dialect.SQLServerDialect;
 import org.hibernate.exception.SQLGrammarException;
@@ -211,6 +212,7 @@ public class CriteriaHQLAlignmentTest extends QueryTranslatorTestCase {
 	@Test
 	@SkipForDialect(value = Oracle8iDialect.class, comment = "Cannot count distinct over multiple columns in Oracle")
 	@SkipForDialect(value = SQLServerDialect.class, comment = "Cannot count distinct over multiple columns in SQL Server")
+	@SkipForDialect(value = AltibaseDialect.class, comment = "Cannot count distinct over multiple columns in Altibase")
 	public void testCountReturnValues() {
 		Session s = openSession();
 		Transaction t = s.beginTransaction();
