@@ -39,6 +39,7 @@ import org.hibernate.dialect.HSQLDialect;
 import org.hibernate.dialect.IngresDialect;
 import org.hibernate.dialect.MySQLDialect;
 import org.hibernate.dialect.TeradataDialect;
+import org.hibernate.dialect.AltibaseDialect;
 import org.hibernate.engine.spi.EntityEntry;
 import org.hibernate.internal.SessionImpl;
 import org.hibernate.jdbc.AbstractWork;
@@ -229,6 +230,8 @@ public class ParentChildTest extends LegacyTestCase {
 
 	@Test
 	@SkipForDialect( value = H2Dialect.class, comment = "Feature not supported: MVCC=TRUE && FOR UPDATE && JOIN")
+	@SkipForDialect(value = AltibaseDialect.class,
+			comment = "Altibase will occur SQLException. ex) `JOIN is not allowed in SELECT FOR UPDATE statements.` ")
 	public void testComplexCriteria() throws Exception {
 		Session s = openSession();
 		Transaction t = s.beginTransaction();

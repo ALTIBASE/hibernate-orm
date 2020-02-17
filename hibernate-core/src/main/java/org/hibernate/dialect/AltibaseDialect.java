@@ -6,30 +6,40 @@
  */
 package org.hibernate.dialect;
 
-import java.sql.Types;
-import java.sql.SQLException;
-import java.sql.ResultSet;
 import java.sql.CallableStatement;
+import java.sql.DatabaseMetaData;
+import java.sql.ResultSet;
+import java.sql.SQLException;
+import java.sql.Types;
 
 import org.hibernate.dialect.pagination.AltibaseLimitHandler;
 import org.hibernate.dialect.pagination.LimitHandler;
+import org.hibernate.exception.ConstraintViolationException;
+import org.hibernate.exception.LockTimeoutException;
+import org.hibernate.exception.spi.SQLExceptionConversionDelegate;
+import org.hibernate.hql.spi.id.IdTableSupportStandardImpl;
+import org.hibernate.hql.spi.id.MultiTableBulkIdStrategy;
+import org.hibernate.hql.spi.id.global.GlobalTemporaryTableBulkIdStrategy;
+import org.hibernate.hql.spi.id.local.AfterUseAction;
+import org.hibernate.internal.util.JdbcExceptionHelper;
 import org.hibernate.sql.CaseFragment;
 import org.hibernate.sql.DecodeCaseFragment;
 import org.hibernate.cfg.Environment;
 import org.hibernate.dialect.function.StandardSQLFunction;
 import org.hibernate.dialect.function.NoArgSQLFunction;
 import org.hibernate.dialect.function.VarArgsSQLFunction;
+import org.hibernate.tool.schema.extract.internal.SequenceInformationExtractorAltibaseDatabaseImpl;
 import org.hibernate.type.StandardBasicTypes;
+
+import org.hibernate.tool.schema.extract.spi.SequenceInformationExtractor;
 
 /**
  * An SQL dialect for Altibase
  *
- * @author Youn Jung Park
+ * @author YounJung Park
  */
 public class AltibaseDialect extends Dialect {
-	/**
-	 * Constructs a AltibaseDialect
-	 */
+
 	public AltibaseDialect() {
 		super();
 
@@ -37,6 +47,7 @@ public class AltibaseDialect extends Dialect {
 		registerNumericTypeMappings();
 		registerDateTimeTypeMappings();
 		registerBooleanTypeMapping();
+		registerBinaryTypeMapping();
 		registerLargeObjectTypeMappings();
 		registerFunctions();
 		registerDefaultProperties();
@@ -50,15 +61,15 @@ public class AltibaseDialect extends Dialect {
 	}
 
 	protected void registerNumericTypeMappings() {
-		registerColumnType( Types.BIT, "number(1,0)" );
 		registerColumnType( Types.BIGINT, "bigint" );
 		registerColumnType( Types.SMALLINT, "smallint" );
-		registerColumnType( Types.TINYINT, "number(3,0)" );
+		registerColumnType( Types.TINYINT, "smallint" );
 		registerColumnType( Types.INTEGER, "integer" );
 		registerColumnType( Types.FLOAT, "float" );
 		registerColumnType( Types.DOUBLE, "double" );
 		registerColumnType( Types.NUMERIC, "number($p,$s)" );
 		registerColumnType( Types.DECIMAL, "number($p,$s)" );
+		registerColumnType( Types.REAL, "float" );
 	}
 
 	protected void registerDateTimeTypeMappings() {
@@ -71,8 +82,17 @@ public class AltibaseDialect extends Dialect {
 		registerColumnType( Types.BOOLEAN, "char(1)" );
 	}
 
+	private void registerBinaryTypeMapping() {
+		registerColumnType( Types.BINARY, 32000, "byte($l)" );
+		registerColumnType( Types.BINARY, "blob" );
+		registerColumnType( Types.VARBINARY, 32000, "varbyte($l)" );
+		registerColumnType( Types.VARBINARY, "blob" );
+		registerColumnType( Types.LONGVARBINARY, "blob" );
+		registerColumnType( Types.BIT, "bit" );
+		registerColumnType( Types.BIT, 64000, "bit($l)" );
+	}
+
 	protected void registerLargeObjectTypeMappings() {
-		registerColumnType( Types.VARBINARY, "byte" );
 		registerColumnType( Types.BLOB, "blob" );
 		registerColumnType( Types.CLOB, "clob" );
 	}
@@ -111,6 +131,10 @@ public class AltibaseDialect extends Dialect {
 
 		registerFunction( "to_char", new StandardSQLFunction("to_char", StandardBasicTypes.STRING) );
 		registerFunction( "to_date", new StandardSQLFunction("to_date", StandardBasicTypes.TIMESTAMP) );
+
+		registerFunction( "current_date", new NoArgSQLFunction("current_date", StandardBasicTypes.DATE, false) );
+		registerFunction( "current_time", new NoArgSQLFunction("current_timestamp", StandardBasicTypes.TIME, false) );
+		registerFunction( "current_timestamp", new NoArgSQLFunction("current_timestamp", StandardBasicTypes.TIMESTAMP, false) );
 
 		registerFunction( "last_day", new StandardSQLFunction("last_day", StandardBasicTypes.DATE) );
 		registerFunction( "sysdate", new NoArgSQLFunction("sysdate", StandardBasicTypes.DATE, false) );
@@ -258,10 +282,17 @@ public class AltibaseDialect extends Dialect {
 
 	@Override
 	public String getQuerySequencesString() {
-		return " select table_name from system_.sys_tables_ where table_type='S'"
-				+ "  union"
-				+ " select synonym_name from system_.sys_synonyms_ where "
-				+ " object_name in (select table_name from system_.sys_tables_ where table_type='S')";
+		return "SELECT a.user_name USER_NAME, b.table_name SEQUENCE_NAME, c.current_seq CURRENT_VALUE, "
+				+ "c.start_seq START_VALUE, c.min_seq MIN_VALUE, c.max_seq MAX_VALUE, c.increment_seq INCREMENT_BY, "
+				+ "c.flag CYCLE_, c.sync_interval CACHE_SIZE "
+				+ "FROM system_.sys_users_ a, system_.sys_tables_ b, x$seq c "
+				+ "WHERE a.user_id = b.user_id AND b.table_oid = c.seq_oid AND a.user_name <> 'SYSTEM_' AND b.table_type = 'S' "
+				+ "ORDER BY 1,2";
+	}
+
+	@Override
+	public SequenceInformationExtractor getSequenceInformationExtractor() {
+		return SequenceInformationExtractorAltibaseDatabaseImpl.INSTANCE;
 	}
 
 	@Override
@@ -281,6 +312,75 @@ public class AltibaseDialect extends Dialect {
 	}
 
 	@Override
+	public SQLExceptionConversionDelegate buildSQLExceptionConversionDelegate() {
+		return (sqlException, message, sql) -> {
+
+			final int errorCode = JdbcExceptionHelper.extractErrorCode(sqlException );
+
+			if ( errorCode == 334393 || errorCode == 4164) {
+				// 334393 - response timeout , 4164 - query timeout.
+				return new LockTimeoutException(message, sqlException, sql );
+			}
+
+			// 200820 - Cannot insert NULL or update to NULL
+			// 69720 - Unique constraint violated
+			// 200823 - foreign key constraint violation
+			// 200822 - failed on update or delete by foreign key constraint violation
+			if ( errorCode == 200820 || errorCode == 69720 || errorCode == 200823 || errorCode == 200822 ) {
+				final String constraintName = getViolatedConstraintNameExtracter()
+						.extractConstraintName( sqlException );
+
+				return new ConstraintViolationException(message, sqlException, sql, constraintName );
+			}
+
+			return null;
+		};
+	}
+
+	@Override
+	public MultiTableBulkIdStrategy getDefaultMultiTableBulkIdStrategy() {
+		return new GlobalTemporaryTableBulkIdStrategy(
+				new IdTableSupportStandardImpl(), AfterUseAction.CLEAN
+		);
+	}
+
+	/**
+	 * {@inheritDoc}
+	 * <p/>
+	 * Altibase in fact does require that parameters appearing in the select clause be wrapped in cast() calls
+	 * to tell the DB parser the type of the select value.
+	 */
+	@Override
+	public boolean requiresCastingOfParametersInSelectClause() {
+		return true;
+	}
+
+	@Override
+	public boolean supportsUnboundedLobLocatorMaterialization() {
+		return false;
+	}
+
+	@Override
+	public boolean supportsPartitionBy() {
+		return true;
+	}
+
+	@Override
+	public boolean supportsJdbcConnectionLobCreation(DatabaseMetaData databaseMetaData) {
+		return false;
+	}
+
+	@Override
+	public boolean canCreateSchema() {
+		return false;
+	}
+
+	@Override
+	public boolean supportsColumnCheck() {
+		return false;
+	}
+
+	@Override
 	public boolean supportsUnionAll() {
 		return true;
 	}
@@ -297,6 +397,11 @@ public class AltibaseDialect extends Dialect {
 
 	@Override
 	public boolean isCurrentTimestampSelectStringCallable() {
+		return false;
+	}
+
+	@Override
+	public boolean supportsTupleDistinctCounts() {
 		return false;
 	}
 

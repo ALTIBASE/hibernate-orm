@@ -12,6 +12,7 @@ import javax.persistence.Entity;
 import javax.persistence.GeneratedValue;
 import javax.persistence.GenerationType;
 import javax.persistence.Id;
+import javax.persistence.Table;
 
 /**
  * Sample of class generator
@@ -19,6 +20,7 @@ import javax.persistence.Id;
  * @author Emmanuel Bernard
  */
 @Entity
+@Table(name = "\"Store\"")
 @javax.persistence.SequenceGenerator(
 		name = "SEQ_STORE",
 		sequenceName = "my_sequence"

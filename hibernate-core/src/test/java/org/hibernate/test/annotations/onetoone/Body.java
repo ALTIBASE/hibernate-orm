@@ -11,11 +11,13 @@ import javax.persistence.Entity;
 import javax.persistence.Id;
 import javax.persistence.OneToOne;
 import javax.persistence.PrimaryKeyJoinColumn;
+import javax.persistence.Table;
 
 /**
  * @author Emmanuel Bernard
  */
 @Entity
+@Table(name = "\"Body\"")
 public class Body {
 	private Integer id;
 	private Heart heart;

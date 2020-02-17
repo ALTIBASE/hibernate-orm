@@ -11,6 +11,7 @@ import java.io.Serializable;
 import javax.persistence.Entity;
 import javax.persistence.GeneratedValue;
 import javax.persistence.Id;
+import javax.persistence.Table;
 
 /**
  * Sample of class generator
@@ -18,6 +19,7 @@ import javax.persistence.Id;
  * @author Emmanuel Bernard
  */
 @Entity
+@Table(name = "\"Store\"")
 @SuppressWarnings("serial")
 public class Store implements Serializable {
 	private Long id;

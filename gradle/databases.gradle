@@ -113,6 +113,13 @@ ext {
                         'jdbc.user'  : 'VLAD',
                         'jdbc.pass'  : 'V1ad_test',
                         'jdbc.url'   : 'jdbc:sap://localhost:39015/'
-                ]
+                ],
+                altibase : [
+                        'db.dialect' : 'org.hibernate.dialect.AltibaseDialect',
+                        'jdbc.driver': 'Altibase.jdbc.driver.AltibaseDriver',
+                        'jdbc.user'  : 'sys',
+                        'jdbc.pass'  : 'manager',
+                        'jdbc.url'   : 'jdbc:Altibase://localhost:20300/mydb'
+                ],
         ]
 }

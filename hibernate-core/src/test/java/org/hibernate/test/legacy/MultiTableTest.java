@@ -30,6 +30,7 @@ import org.hibernate.Session;
 import org.hibernate.Transaction;
 import org.hibernate.criterion.Restrictions;
 import org.hibernate.dialect.AbstractHANADialect;
+import org.hibernate.dialect.AltibaseDialect;
 import org.hibernate.dialect.H2Dialect;
 import org.hibernate.dialect.MySQLDialect;
 import org.hibernate.engine.spi.SessionImplementor;
@@ -249,6 +250,8 @@ public class MultiTableTest extends LegacyTestCase {
 	}
 
 	@Test
+	@SkipForDialect(value = AltibaseDialect.class,
+			comment = "Altibase will occur SQLException. ex) `JOIN is not allowed in SELECT FOR UPDATE statements.` ")
 	public void testMultiTable() throws Exception {
 		Session s = openSession();
 		Transaction t = s.beginTransaction();
@@ -392,6 +395,8 @@ public class MultiTableTest extends LegacyTestCase {
 	}
 
 	@Test
+	@SkipForDialect(value = AltibaseDialect.class,
+			comment = "Altibase will occur SQLException. ex) `JOIN is not allowed in SELECT FOR UPDATE statements.` ")
 	public void testMultiTableGeneratedId() throws Exception {
 		Session s = openSession();
 		Transaction t = s.beginTransaction();

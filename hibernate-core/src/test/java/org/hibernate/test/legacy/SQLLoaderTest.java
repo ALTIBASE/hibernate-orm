@@ -20,6 +20,8 @@ import org.hibernate.Session;
 import org.hibernate.Transaction;
 import org.hibernate.cfg.AvailableSettings;
 import org.hibernate.cfg.Configuration;
+
+import org.hibernate.dialect.AltibaseDialect;
 import org.hibernate.dialect.Dialect;
 import org.hibernate.dialect.HSQLDialect;
 import org.hibernate.dialect.MySQLDialect;
@@ -393,7 +395,8 @@ public class SQLLoaderTest extends LegacyTestCase {
 	}
 
 	@Test
-	@SkipForDialect( { HSQLDialect.class, PostgreSQL81Dialect.class, PostgreSQLDialect.class } )
+	@SkipForDialect( value = { HSQLDialect.class, PostgreSQL81Dialect.class, PostgreSQLDialect.class, AltibaseDialect.class },
+			comment = "Altibase will occur SQL parse error. ex) `from TA where  UCASE(NAME)  like  UCASE('max')` ")
 	public void testEscapedJDBC() throws HibernateException, SQLException {
 		Session session = openSession();
 		session.beginTransaction();

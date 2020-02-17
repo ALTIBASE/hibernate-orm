@@ -21,6 +21,7 @@ import java.io.Serializable;
 import java.util.List;
 
 import org.hibernate.dialect.AbstractHANADialect;
+import org.hibernate.dialect.AltibaseDialect;
 import org.hibernate.dialect.DB2Dialect;
 import org.hibernate.dialect.Oracle8iDialect;
 import org.hibernate.dialect.SQLServerDialect;
@@ -205,7 +206,8 @@ public class CriteriaLiteralInSelectExpressionTest extends BaseEntityManagerFunc
 			DB2Dialect.class,
 			SQLServerDialect.class,
 			SybaseDialect.class,
-			AbstractHANADialect.class
+			AbstractHANADialect.class,
+			AltibaseDialect.class // Altibase will occur syntax error. ex) `select 1=2 as col_0_0_ from `)
 	})
 	public void testStringLiteral2() {
 		final EntityManager entityManager = getOrCreateEntityManager();

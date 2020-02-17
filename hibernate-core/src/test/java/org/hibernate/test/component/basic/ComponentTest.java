@@ -18,11 +18,13 @@ import org.hibernate.boot.Metadata;
 import org.hibernate.cfg.Environment;
 import org.hibernate.criterion.Property;
 import org.hibernate.criterion.Restrictions;
+import org.hibernate.dialect.AltibaseDialect;
 import org.hibernate.dialect.SybaseASE15Dialect;
 import org.hibernate.dialect.function.SQLFunction;
 import org.hibernate.mapping.Component;
 import org.hibernate.mapping.Formula;
 import org.hibernate.mapping.PersistentClass;
+import org.hibernate.testing.SkipForDialect;
 import org.hibernate.type.StandardBasicTypes;
 
 import org.hibernate.testing.FailureExpected;
@@ -74,6 +76,8 @@ public class ComponentTest extends BaseNonConfigCoreFunctionalTestCase {
 	}
 
 	@Test
+	@SkipForDialect(value = AltibaseDialect.class,
+			comment = "Altibase cannot extract from year. ex) `SELECT EXTRACT(MONTH FROM i1) month FROM t1` ")
 	public void testUpdateFalse() {
 		sessionFactory().getStatistics().clear();
 		
@@ -101,6 +105,8 @@ public class ComponentTest extends BaseNonConfigCoreFunctionalTestCase {
 	}
 	
 	@Test
+	@SkipForDialect(value = AltibaseDialect.class,
+			comment = "Altibase cannot extract from year. ex) `SELECT EXTRACT(MONTH FROM i1) month FROM t1` ")
 	public void testComponent() {
 		Session s = openSession();
 		Transaction t = s.beginTransaction();
@@ -200,6 +206,8 @@ public class ComponentTest extends BaseNonConfigCoreFunctionalTestCase {
 	}
 
 	@Test
+	@SkipForDialect(value = AltibaseDialect.class,
+			comment = "Altibase cannot extract from year. ex) `SELECT EXTRACT(MONTH FROM i1) month FROM t1` ")
 	public void testComponentFormulaQuery() {
 		Session s = openSession();
 		Transaction t = s.beginTransaction();
@@ -218,6 +226,8 @@ public class ComponentTest extends BaseNonConfigCoreFunctionalTestCase {
 	}
 	
 	@Test
+	@SkipForDialect(value = AltibaseDialect.class,
+			comment = "Altibase cannot extract from year. ex) `SELECT EXTRACT(MONTH FROM i1) month FROM t1` ")
 	public void testCustomColumnReadAndWrite() {
 		Session s = openSession();
 		Transaction t = s.beginTransaction();
@@ -266,6 +276,8 @@ public class ComponentTest extends BaseNonConfigCoreFunctionalTestCase {
 	}
 	
 	@Test
+	@SkipForDialect(value = AltibaseDialect.class,
+			comment = "Altibase cannot extract from year. ex) `SELECT EXTRACT(MONTH FROM i1) month FROM t1` ")
 	public void testNamedQuery() {
 		Session s = openSession();
 		Transaction t = s.beginTransaction();

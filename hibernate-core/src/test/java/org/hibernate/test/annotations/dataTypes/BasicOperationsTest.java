@@ -14,6 +14,8 @@ import java.sql.Statement;
 import java.util.Date;
 import java.util.Locale;
 
+import org.hibernate.dialect.AltibaseDialect;
+import org.hibernate.testing.SkipForDialect;
 import org.junit.Test;
 
 import org.hibernate.Session;
@@ -51,6 +53,8 @@ public class BasicOperationsTest extends BaseCoreFunctionalTestCase {
 	}
 
 	@Test
+ 	@SkipForDialect(value = AltibaseDialect.class,
+			comment = "Altibase will convert DATE column datetype to 93(TIMESTAMP)")
 	public void testCreateAndDelete() {
 		Date now = new Date();
 

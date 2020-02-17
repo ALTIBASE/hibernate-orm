@@ -18,6 +18,7 @@ import org.hibernate.boot.Metadata;
 import org.hibernate.boot.MetadataSources;
 import org.hibernate.boot.registry.StandardServiceRegistryBuilder;
 import org.hibernate.cfg.AvailableSettings;
+import org.hibernate.dialect.AltibaseDialect;
 import org.hibernate.engine.spi.SessionFactoryImplementor;
 import org.hibernate.id.enhanced.NoopOptimizer;
 import org.hibernate.id.enhanced.Optimizer;
@@ -26,7 +27,9 @@ import org.hibernate.id.enhanced.SequenceStyleGenerator;
 import org.hibernate.internal.CoreMessageLogger;
 import org.hibernate.service.spi.ServiceRegistryImplementor;
 
+import org.hibernate.testing.SkipForDialect;
 import org.hibernate.testing.TestForIssue;
+import org.hibernate.testing.junit4.BaseUnitTestCase;
 import org.hibernate.testing.logger.LoggerInspectionRule;
 import org.hibernate.testing.logger.Triggerable;
 import org.junit.Rule;
@@ -40,8 +43,7 @@ import static org.junit.Assert.assertTrue;
 /**
  * @author Gail Badner
  */
-public class NegativeValueSequenceTest {
-
+public class NegativeValueSequenceTest extends BaseUnitTestCase {
 	@Rule
 	public LoggerInspectionRule logInspection = new LoggerInspectionRule(
 			Logger.getMessageLogger( CoreMessageLogger.class, SequenceStyleGenerator.class.getName() )
@@ -146,6 +148,8 @@ public class NegativeValueSequenceTest {
 
 	@Test
 	@TestForIssue( jiraKey = "HHH-11709" )
+	@SkipForDialect(value = AltibaseDialect.class,
+			comment = "Altibase cannot create sequence with negative start value incremented by 1.")
 	public void testPositiveOneAllocationSizeNoopOptimizer() {
 		ServiceRegistryImplementor serviceRegistry = null;
 		SessionFactoryImplementor sessionFactory = null;
@@ -194,6 +198,8 @@ public class NegativeValueSequenceTest {
 
 	@Test
 	@TestForIssue( jiraKey = "HHH-11709" )
+	@SkipForDialect(value = AltibaseDialect.class,
+			comment = "Altibase cannot create sequence with negative start value incremented by 1.")
 	public void testPositiveTwoAllocationSizeNoopOptimizer() {
 		ServiceRegistryImplementor serviceRegistry = null;
 		SessionFactoryImplementor sessionFactory = null;
@@ -245,6 +251,8 @@ public class NegativeValueSequenceTest {
 
 	@Test
 	@TestForIssue( jiraKey = "HHH-11709" )
+	@SkipForDialect(value = AltibaseDialect.class,
+			comment = "Altibase cannot create sequence with negative start value incremented by 1.")
 	public void testPositiveTwoAllocationSizePooledOptimizer() {
 		ServiceRegistryImplementor serviceRegistry = null;
 		SessionFactoryImplementor sessionFactory = null;

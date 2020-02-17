@@ -35,6 +35,7 @@ import org.hibernate.criterion.Projections;
 import org.hibernate.criterion.Property;
 import org.hibernate.criterion.Restrictions;
 import org.hibernate.criterion.Subqueries;
+import org.hibernate.dialect.AltibaseDialect;
 import org.hibernate.dialect.Oracle8iDialect;
 import org.hibernate.dialect.SQLServerDialect;
 import org.hibernate.dialect.SybaseASE15Dialect;
@@ -197,6 +198,8 @@ public class CriteriaQueryTest extends BaseNonConfigCoreFunctionalTestCase {
 
 	@Test
     @SkipForDialect( value = SybaseASE15Dialect.class, strictMatching = true, jiraKey = "HHH-3032", comment = "I was told this is fixed in Sybase ASE 15.7")
+	@SkipForDialect(value = AltibaseDialect.class,
+			comment = "Altibase cannot parse statement. ex) `WHERE  ? = (SELECT ST_.NAME AS Y0_ FROM   student ST_ ORDER  BY y0_ ASC)` ")
 	public void testSubselect() {
 		Session session = openSession();
 		Transaction t = session.beginTransaction();
@@ -2049,6 +2052,8 @@ public class CriteriaQueryTest extends BaseNonConfigCoreFunctionalTestCase {
         
     @Test
     @TestForIssue( jiraKey = "HHH-6643" )
+	@SkipForDialect(value = AltibaseDialect.class,
+			comment = "Altibase cannot use multiple not.  ex) `where not not this_.studentId=?` ")
     public void testNotNot() {
     	Student student1 = new Student();
     	student1.setName("Foo1 Foo1");

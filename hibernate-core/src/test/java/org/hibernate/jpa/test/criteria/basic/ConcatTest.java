@@ -17,8 +17,10 @@ import javax.persistence.criteria.Root;
 import java.io.Serializable;
 import java.util.List;
 
+import org.hibernate.dialect.AltibaseDialect;
 import org.hibernate.jpa.test.BaseEntityManagerFunctionalTestCase;
 
+import org.hibernate.testing.SkipForDialect;
 import org.junit.Before;
 import org.junit.Test;
 
@@ -60,6 +62,8 @@ public class ConcatTest extends BaseEntityManagerFunctionalTestCase {
 	}
 
 	@Test
+ 	@SkipForDialect(value = AltibaseDialect.class,
+			comment = "Altibase cannot use BOTH in TRIM , ex) `TRIM(BOTH ' ' from '.'||'Test   ')` ")
 	public void testSelectCaseWithConcat() throws Exception {
 		EntityManager entityManager = getOrCreateEntityManager();
 		entityManager.getTransaction().begin();

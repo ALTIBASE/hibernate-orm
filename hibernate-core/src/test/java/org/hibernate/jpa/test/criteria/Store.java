@@ -9,11 +9,13 @@ package org.hibernate.jpa.test.criteria;
 import javax.persistence.Entity;
 import javax.persistence.GeneratedValue;
 import javax.persistence.Id;
+import javax.persistence.Table;
 
 /**
  * @author Chris Cranford
  */
 @Entity
+@Table(name = "\"Store\"")
 public class Store {
 	@Id
 	@GeneratedValue

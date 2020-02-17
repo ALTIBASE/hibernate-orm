@@ -32,11 +32,16 @@ public class AltibaseLimitHandler extends AbstractLimitHandler {
 	public String processSql(String sql, RowSelection selection) {
 		if ( LimitHelper.useLimit( this, selection ) ) {
 			final boolean useLimitOffset = LimitHelper.hasFirstRow( selection );
-			return sql + (useLimitOffset ? " limit ?, ?" : " limit ?");
+			return sql + (useLimitOffset ? " limit ? offset ? + 1" : " limit ?");
 		}
 		else {
 			// or return unaltered SQL
 			return sql;
 		}
+	}
+
+	@Override
+	public boolean bindLimitParametersInReverseOrder() {
+		return true;
 	}
 }

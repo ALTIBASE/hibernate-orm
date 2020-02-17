@@ -16,6 +16,7 @@ import org.hibernate.Query;
 import org.hibernate.Session;
 import org.hibernate.criterion.Restrictions;
 import org.hibernate.dialect.AbstractHANADialect;
+import org.hibernate.dialect.AltibaseDialect;
 import org.hibernate.dialect.Oracle8iDialect;
 import org.hibernate.engine.spi.SessionImplementor;
 import org.hibernate.mapping.PersistentClass;
@@ -357,8 +358,8 @@ public class EnumeratedTypeTest extends BaseNonConfigCoreFunctionalTestCase {
 	
 	@Test
 	@TestForIssue(jiraKey = "HHH-4699")
-	@SkipForDialect(value = { Oracle8iDialect.class, AbstractHANADialect.class }, jiraKey = "HHH-8516",
-			comment = "HHH-4699 was specifically for using a CHAR, but Oracle/HANA do not handle the 2nd query correctly without VARCHAR. ")
+	@SkipForDialect(value = { Oracle8iDialect.class, AbstractHANADialect.class, AltibaseDialect.class }, jiraKey = "HHH-8516",
+		  	comment = "HHH-4699 was specifically for using a CHAR, but Oracle/HANA/Altibase do not handle the 2nd query correctly without VARCHAR. ")
 	public void testTrimmedEnumChar() throws SQLException {
 		// use native SQL to insert, forcing whitespace to occur
 		final Session s = openSession();
