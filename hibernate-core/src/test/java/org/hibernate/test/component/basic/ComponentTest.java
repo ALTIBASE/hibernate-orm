@@ -39,7 +39,6 @@ import static org.junit.Assert.assertNull;
 /**
  * @author Gavin King
  */
-@SkipForDialect(value = AltibaseDialect.class, comment = "Altibase cannot extract from year")
 public class ComponentTest extends BaseNonConfigCoreFunctionalTestCase {
 	@Override
 	public String[] getMappings() {
@@ -77,6 +76,8 @@ public class ComponentTest extends BaseNonConfigCoreFunctionalTestCase {
 	}
 
 	@Test
+	@SkipForDialect(value = AltibaseDialect.class,
+			comment = "Altibase cannot extract from year. ex) `SELECT EXTRACT(MONTH FROM i1) month FROM t1` ")
 	public void testUpdateFalse() {
 		sessionFactory().getStatistics().clear();
 		
@@ -104,6 +105,8 @@ public class ComponentTest extends BaseNonConfigCoreFunctionalTestCase {
 	}
 	
 	@Test
+	@SkipForDialect(value = AltibaseDialect.class,
+			comment = "Altibase cannot extract from year. ex) `SELECT EXTRACT(MONTH FROM i1) month FROM t1` ")
 	public void testComponent() {
 		Session s = openSession();
 		Transaction t = s.beginTransaction();
@@ -203,6 +206,8 @@ public class ComponentTest extends BaseNonConfigCoreFunctionalTestCase {
 	}
 
 	@Test
+	@SkipForDialect(value = AltibaseDialect.class,
+			comment = "Altibase cannot extract from year. ex) `SELECT EXTRACT(MONTH FROM i1) month FROM t1` ")
 	public void testComponentFormulaQuery() {
 		Session s = openSession();
 		Transaction t = s.beginTransaction();
@@ -221,6 +226,8 @@ public class ComponentTest extends BaseNonConfigCoreFunctionalTestCase {
 	}
 	
 	@Test
+	@SkipForDialect(value = AltibaseDialect.class,
+			comment = "Altibase cannot extract from year. ex) `SELECT EXTRACT(MONTH FROM i1) month FROM t1` ")
 	public void testCustomColumnReadAndWrite() {
 		Session s = openSession();
 		Transaction t = s.beginTransaction();
@@ -269,6 +276,8 @@ public class ComponentTest extends BaseNonConfigCoreFunctionalTestCase {
 	}
 	
 	@Test
+	@SkipForDialect(value = AltibaseDialect.class,
+			comment = "Altibase cannot extract from year. ex) `SELECT EXTRACT(MONTH FROM i1) month FROM t1` ")
 	public void testNamedQuery() {
 		Session s = openSession();
 		Transaction t = s.beginTransaction();

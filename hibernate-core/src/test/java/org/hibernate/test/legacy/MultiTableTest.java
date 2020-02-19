@@ -250,7 +250,8 @@ public class MultiTableTest extends LegacyTestCase {
 	}
 
 	@Test
-	@SkipForDialect(value = AltibaseDialect.class, comment = "Altibase JOIN is not allowed in SELECT FOR UPDATE statements")
+	@SkipForDialect(value = AltibaseDialect.class,
+			comment = "Altibase will occur SQLException. ex) `JOIN is not allowed in SELECT FOR UPDATE statements.` ")
 	public void testMultiTable() throws Exception {
 		Session s = openSession();
 		Transaction t = s.beginTransaction();
@@ -394,7 +395,8 @@ public class MultiTableTest extends LegacyTestCase {
 	}
 
 	@Test
-	@SkipForDialect(value = AltibaseDialect.class, comment = "Altibase JOIN is not allowed in SELECT FOR UPDATE statements")
+	@SkipForDialect(value = AltibaseDialect.class,
+			comment = "Altibase will occur SQLException. ex) `JOIN is not allowed in SELECT FOR UPDATE statements.` ")
 	public void testMultiTableGeneratedId() throws Exception {
 		Session s = openSession();
 		Transaction t = s.beginTransaction();

@@ -230,7 +230,8 @@ public class ParentChildTest extends LegacyTestCase {
 
 	@Test
 	@SkipForDialect( value = H2Dialect.class, comment = "Feature not supported: MVCC=TRUE && FOR UPDATE && JOIN")
-	@SkipForDialect(value = AltibaseDialect.class, comment = "Altibase JOIN is not allowed in SELECT FOR UPDATE statements")
+	@SkipForDialect(value = AltibaseDialect.class,
+			comment = "Altibase will occur SQLException. ex) `JOIN is not allowed in SELECT FOR UPDATE statements.` ")
 	public void testComplexCriteria() throws Exception {
 		Session s = openSession();
 		Transaction t = s.beginTransaction();

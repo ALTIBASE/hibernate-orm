@@ -12,8 +12,6 @@ import javax.persistence.Id;
 
 import org.hibernate.Query;
 
-import org.hibernate.dialect.AltibaseDialect;
-import org.hibernate.dialect.HSQLDialect;
 import org.hibernate.testing.TestForIssue;
 import org.hibernate.testing.junit4.BaseNonConfigCoreFunctionalTestCase;
 import org.junit.Test;
@@ -101,12 +99,7 @@ public class HibernateFirstResultMaxResultsTest extends BaseNonConfigCoreFunctio
 		checkResults( executeQuery( query, 1, null ), 1, 4 );
 		checkResults( executeQuery( query, 1, 0 ), 1, 4 );
 		checkResults( executeQuery( query, 1, -1 ), 1, 4 );
-		if ( !(getDialect() instanceof AltibaseDialect) )  {
-			checkResults(executeQuery(query, 2, 1), 2, 1);
-		}
-		else {
-			checkResults(executeQuery(query, 1, 1), 1, 1);
-		}
+		checkResults( executeQuery( query, 1, 1 ), 1, 1 );
 	}
 
 	public List executeQuery(String queryString, Integer firstResult, Integer maxResults) {

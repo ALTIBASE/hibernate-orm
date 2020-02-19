@@ -30,7 +30,8 @@ public class Product implements Serializable
 
 	@Id
     public Integer id;
-    
+
+	// Altibase require varchar to remove trailing empty space
     @Column(name="product_idnf", length=18, nullable=false, unique=true,
         columnDefinition="varchar(18)")
     public String productIdnf;

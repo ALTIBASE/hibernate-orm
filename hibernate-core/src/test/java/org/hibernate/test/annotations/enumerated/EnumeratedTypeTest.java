@@ -359,7 +359,7 @@ public class EnumeratedTypeTest extends BaseNonConfigCoreFunctionalTestCase {
 	@Test
 	@TestForIssue(jiraKey = "HHH-4699")
 	@SkipForDialect(value = { Oracle8iDialect.class, AbstractHANADialect.class, AltibaseDialect.class }, jiraKey = "HHH-8516",
-			comment = "HHH-4699 was specifically for using a CHAR, but Oracle/HANA/Altibase do not handle the 2nd query correctly without VARCHAR. ")
+		  	comment = "HHH-4699 was specifically for using a CHAR, but Oracle/HANA/Altibase do not handle the 2nd query correctly without VARCHAR. ")
 	public void testTrimmedEnumChar() throws SQLException {
 		// use native SQL to insert, forcing whitespace to occur
 		final Session s = openSession();

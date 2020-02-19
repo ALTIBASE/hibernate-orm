@@ -53,7 +53,8 @@ public class BasicOperationsTest extends BaseCoreFunctionalTestCase {
 	}
 
 	@Test
-	@SkipForDialect(value = AltibaseDialect.class,	comment = "Altibase converts DATE to 93")
+ 	@SkipForDialect(value = AltibaseDialect.class,
+			comment = "Altibase will convert DATE column datetype to 93(TIMESTAMP)")
 	public void testCreateAndDelete() {
 		Date now = new Date();
 

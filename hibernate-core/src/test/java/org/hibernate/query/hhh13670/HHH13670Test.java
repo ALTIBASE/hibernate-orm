@@ -83,7 +83,8 @@ public class HHH13670Test extends BaseCoreFunctionalTestCase {
     }
 
     @Test
-    @SkipForDialect(value = AltibaseDialect.class, comment = "Altibase cannot parse")
+    @SkipForDialect(value = AltibaseDialect.class,
+            comment = "Inner join inside inner join is not supported in Altibase")
     public void testSubTypeJoinWithTableGroupJoins() {
         doInJPA(this::sessionFactory, em -> {
             List<Tuple> resultList = em.createQuery("SELECT subB_0.id, subA_0.id, subB_0.id, subA_0.id FROM SubB subB_0 LEFT JOIN SubA subA_0 ON subA_0.id = subB_0.parent.id ORDER BY subB_0.id ASC, subA_0.id ASC", Tuple.class)

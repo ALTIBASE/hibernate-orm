@@ -109,7 +109,8 @@ public class EntityJoinTest extends BaseNonConfigCoreFunctionalTestCase {
     @Test
     @TestForIssue(jiraKey = "HHH-11337")
     @SkipForDialect(
-            value = { SybaseDialect.class, AltibaseDialect.class }
+            value = { SybaseDialect.class, AltibaseDialect.class },
+            comment = "Altibase will occur Column not found error. ex) `SELECT * FROM A a0_, C c2_ LEFT OUTER JOIN B b1_ ON (b1_.z = a0_.z)` "
     )
     public void testLeftOuterEntityJoinsWithImplicitInnerJoinInSelectClause() {
         doInHibernate( this::sessionFactory, session -> {

@@ -67,7 +67,7 @@ public class WithClauseTest extends BaseCoreFunctionalTestCase {
 	}
 
 	@Test
-	@SkipForDialect(value = AltibaseDialect.class, comment = "Altibase does not support multiple outer join")
+	@SkipForDialect(value = AltibaseDialect.class, comment = "Altibase does not support complex inner join")
 	public void testWithClause() {
 		TestData data = new TestData();
 		data.prepare();
@@ -156,7 +156,7 @@ public class WithClauseTest extends BaseCoreFunctionalTestCase {
 
 	@Test
 	@TestForIssue(jiraKey = "HHH-9329")
-	@SkipForDialect(value = AltibaseDialect.class, comment = "Altibase does not support multiple outer join")
+	@SkipForDialect(value = AltibaseDialect.class, comment = "Altibase does not support complex inner join")
 	public void testWithClauseAsSubquery() {
 		TestData data = new TestData();
 		data.prepare();
@@ -178,7 +178,7 @@ public class WithClauseTest extends BaseCoreFunctionalTestCase {
 
 	@Test
 	@TestForIssue(jiraKey = "HHH-11230")
-	@SkipForDialect(value = AltibaseDialect.class, comment = "Altibase does not support multiple outer join")
+	@SkipForDialect(value = AltibaseDialect.class, comment = "Altibase does not support complex inner join")
 	public void testWithClauseAsSubqueryWithEqualOperator() {
 		TestData data = new TestData();
 		data.prepare();
@@ -199,7 +199,7 @@ public class WithClauseTest extends BaseCoreFunctionalTestCase {
 
 	@Test
 	@TestForIssue(jiraKey = "HHH-9329")
-	@SkipForDialect(value = AltibaseDialect.class, comment = "Altibase does not support multiple outer join")
+	@SkipForDialect(value = AltibaseDialect.class, comment = "Altibase does not support complex inner join")
 	public void testWithClauseAsSubqueryWithKey() {
 		TestData data = new TestData();
 		data.prepare();
@@ -249,7 +249,7 @@ public class WithClauseTest extends BaseCoreFunctionalTestCase {
 
 	@Test
 	@TestForIssue(jiraKey = "HHH-11401")
-	@SkipForDialect(value = AltibaseDialect.class, comment = "Altibase does not support multiple outer join")
+	@SkipForDialect(value = AltibaseDialect.class, comment = "Altibase does not support complex inner join")
 	public void testWithClauseAsSubqueryWithKeyAndOtherJoinReference() {
 		TestData data = new TestData();
 		data.prepare();

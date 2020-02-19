@@ -62,7 +62,8 @@ public class ConcatTest extends BaseEntityManagerFunctionalTestCase {
 	}
 
 	@Test
-	@SkipForDialect(value = AltibaseDialect.class, comment = "Altibase cannot use BOTH in TRIM")
+ 	@SkipForDialect(value = AltibaseDialect.class,
+			comment = "Altibase cannot use BOTH in TRIM , ex) `TRIM(BOTH ' ' from '.'||'Test   ')` ")
 	public void testSelectCaseWithConcat() throws Exception {
 		EntityManager entityManager = getOrCreateEntityManager();
 		entityManager.getTransaction().begin();

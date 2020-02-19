@@ -395,7 +395,8 @@ public class SQLLoaderTest extends LegacyTestCase {
 	}
 
 	@Test
-	@SkipForDialect( { HSQLDialect.class, PostgreSQL81Dialect.class, PostgreSQLDialect.class, AltibaseDialect.class } )
+	@SkipForDialect( value = { HSQLDialect.class, PostgreSQL81Dialect.class, PostgreSQLDialect.class, AltibaseDialect.class },
+			comment = "Altibase will occur SQL parse error. ex) `from TA where  UCASE(NAME)  like  UCASE('max')` ")
 	public void testEscapedJDBC() throws HibernateException, SQLException {
 		Session session = openSession();
 		session.beginTransaction();

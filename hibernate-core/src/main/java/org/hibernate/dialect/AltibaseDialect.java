@@ -343,20 +343,15 @@ public class AltibaseDialect extends Dialect {
 
 			final int errorCode = JdbcExceptionHelper.extractErrorCode(sqlException );
 
-			if ( errorCode == 334393) {
-				// 334393 - response timeout.
-				return new LockTimeoutException(message, sqlException, sql );
-			}
-			if ( errorCode == 4164) {
-				// 4164 - query timeout.
+			if ( errorCode == 334393 || errorCode == 4164) {
+				// 334393 - response timeout , 4164 - query timeout.
 				return new LockTimeoutException(message, sqlException, sql );
 			}
 
 			// 200820 - Cannot insert NULL or update to NULL
 			// 69720 - Unique constraint violated
 			// 200823 - foreign key constraint violation
-			// 200822 - failed on update or delete by foreign key constraint
-			// violation
+			// 200822 - failed on update or delete by foreign key constraint violation
 			if ( errorCode == 200820 || errorCode == 69720 || errorCode == 200823 || errorCode == 200822 ) {
 				final String constraintName = getViolatedConstraintNameExtracter()
 						.extractConstraintName( sqlException );

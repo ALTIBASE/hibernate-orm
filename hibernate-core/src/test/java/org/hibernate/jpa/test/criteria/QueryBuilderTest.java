@@ -321,7 +321,8 @@ public class QueryBuilderTest extends BaseEntityManagerFunctionalTestCase {
 
 	@Test
 	@TestForIssue(jiraKey = "HHH-12314")
-	@SkipForDialect(AltibaseDialect.class)
+	@SkipForDialect(value = AltibaseDialect.class,
+			comment = "Inner join inside inner join is not supported in Altibase")
 	public void testJoinUsingNegatedPredicate() {
 		// Write test data
 		doInJPA( this::entityManagerFactory, entityManager -> {

@@ -207,7 +207,7 @@ public class CriteriaLiteralInSelectExpressionTest extends BaseEntityManagerFunc
 			SQLServerDialect.class,
 			SybaseDialect.class,
 			AbstractHANADialect.class,
-			AltibaseDialect.class
+			AltibaseDialect.class // Altibase will occur syntax error. ex) `select 1=2 as col_0_0_ from `)
 	})
 	public void testStringLiteral2() {
 		final EntityManager entityManager = getOrCreateEntityManager();

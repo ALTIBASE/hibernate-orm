@@ -2750,7 +2750,8 @@ public class ASTParserLoadingTest extends BaseCoreFunctionalTestCase {
 	}
 
 	@Test
-	@SkipForDialect(value = AltibaseDialect.class, comment = "Altibase does not support extract from date")
+	@SkipForDialect(value = AltibaseDialect.class,
+			comment = "Altibase does not support extract from date. ex) `select TO_CHAR(EXTRACT(YEAR from current_date))`")
 	public void testStr() {
 		Session session = openSession();
 		Transaction txn = session.beginTransaction();
@@ -2811,7 +2812,8 @@ public class ASTParserLoadingTest extends BaseCoreFunctionalTestCase {
 	}
 
 	@Test
-	@SkipForDialect(value = AltibaseDialect.class, comment = "Altibase does not support extract from date")
+	@SkipForDialect(value = AltibaseDialect.class,
+			comment = "Altibase does not support extract from date. ex) `select EXTRACT(SECOND from current_timestamp)`")
 	public void testExtract() {
 		Session session = openSession();
 		Transaction txn = session.beginTransaction();
@@ -3774,7 +3776,8 @@ public class ASTParserLoadingTest extends BaseCoreFunctionalTestCase {
 	}
 
 	@Test
-	@SkipForDialect(value = AltibaseDialect.class, comment = "Altibase cannot use three arguments in LOCATE")
+	@SkipForDialect(value = AltibaseDialect.class,
+			comment = "Altibase cannot use three arguments in LOCATE. ex) `where locate('abc', animal0_.description, 2)=2`")
 	public void testEJBQLFunctions() throws Exception {
 		Session session = openSession();
 		Transaction t = session.beginTransaction();
