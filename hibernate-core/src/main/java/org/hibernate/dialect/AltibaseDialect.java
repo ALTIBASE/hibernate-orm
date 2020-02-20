@@ -12,10 +12,8 @@ import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.sql.Types;
 
-import org.hibernate.dialect.pagination.AbstractLimitHandler;
+import org.hibernate.dialect.pagination.AltibaseLimitHandler;
 import org.hibernate.dialect.pagination.LimitHandler;
-import org.hibernate.dialect.pagination.LimitHelper;
-import org.hibernate.engine.spi.RowSelection;
 import org.hibernate.exception.ConstraintViolationException;
 import org.hibernate.exception.LockTimeoutException;
 import org.hibernate.exception.spi.SQLExceptionConversionDelegate;
@@ -41,30 +39,6 @@ import org.hibernate.tool.schema.extract.spi.SequenceInformationExtractor;
  * @author YounJung Park
  */
 public class AltibaseDialect extends Dialect {
-
-	private static final AbstractLimitHandler LIMIT_HANDLER = new AbstractLimitHandler() {
-		@Override
-		public String processSql(String sql, RowSelection selection) {
-			if ( LimitHelper.useLimit( this, selection ) ) {
-				final boolean useLimitOffset = LimitHelper.hasFirstRow( selection );
-				return sql + (useLimitOffset ? " limit ? offset ? + 1" : " limit ?");
-			}
-			else {
-				// or return unaltered SQL
-				return sql;
-			}
-		}
-
-		@Override
-		public boolean supportsLimit() {
-			return true;
-		}
-
-		@Override
-		public boolean bindLimitParametersInReverseOrder() {
-			return true;
-		}
-	};
 
 	public AltibaseDialect() {
 		super();
@@ -323,7 +297,7 @@ public class AltibaseDialect extends Dialect {
 
 	@Override
 	public LimitHandler getLimitHandler() {
-		return LIMIT_HANDLER;
+		return AltibaseLimitHandler.INSTANCE;
 	}
 
 	@Override
