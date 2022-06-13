@@ -39,8 +39,8 @@ The AltibaseDialect.java file for Hibernate version can be downloaded from the l
     
 2. Compile AltibaseLimitHandler.java, AltibaseDialect.java and SequenceInformationExtractorAltibaseDatabaseImpl.java files.
 
-        javac -d . -cp . AltibaseLimitHandler.java
         javac -d . -cp . SequenceInformationExtractorAltibaseDatabaseImpl.java
+        javac -d . -cp . AltibaseLimitHandler.java
         javac -d . -cp . AltibaseDialect.java
     
 3. When compilation is completed, the following class files will be created under the current directory.
