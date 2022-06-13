@@ -4,9 +4,9 @@ This document describes how to port AltibaseDialect to Hibernate to work with Al
 ## Hibernate full build
 If you use the hibernate full build command as below, hibernate core library file containing AltibaseDialect.class will be created and detailed explanation can be found [here](README.md).
 
-    git clone git://github.com/ALTIBASE/hibernate-orm.git
-    git checkout proper branch(ex:5.1)
+    git clone https://github.com/ALTIBASE/hibernate-orm.git
     cd hibernate-orm
+    git checkout proper branch(ex:5.1)
     ./gradlew clean build
 
 ## AltibaseDialect manual porting
@@ -48,6 +48,8 @@ The AltibaseDialect.java file for Hibernate version can be downloaded from the l
         ./org/hibernate/dialect/AltibaseDialect.class
         ./org/hibernate/dialect/pagination/AltibaseLimitHandler.class
         ./org/hibernate/tool/schema/extract/internal/SequenceInformationExtractorAltibaseDatabaseImpl.class
+
+4. Delete the *.java files or move them to another directory so that the Altibase Dialet java source is not included in the jar file.
 
 ### Port the AltibaseDialect class to a Hibernate jar file
 Make a new jar file using the newly compiled AltibaseDialect classes.
