@@ -130,7 +130,6 @@ import org.hibernate.event.spi.SaveOrUpdateEventListener;
 import org.hibernate.graph.GraphSemantic;
 import org.hibernate.graph.RootGraph;
 import org.hibernate.graph.internal.RootGraphImpl;
-import org.hibernate.graph.spi.GraphImplementor;
 import org.hibernate.graph.spi.RootGraphImplementor;
 import org.hibernate.hql.spi.QueryTranslator;
 import org.hibernate.internal.CriteriaImpl.CriterionEntry;
@@ -215,14 +214,14 @@ public class SessionImpl
 	private transient LoadEvent loadEvent; //cached LoadEvent instance
 
 	private transient TransactionObserver transactionObserver;
-	
-	private transient GraphImplementor fetchGraphLoadContext;
+
+	private transient boolean isEnforcingFetchGraph;
 
 	public SessionImpl(SessionFactoryImpl factory, SessionCreationOptions options) {
 		super( factory, options );
 
-		this.actionQueue = new ActionQueue( this );
-		this.persistenceContext = new StatefulPersistenceContext( this );
+		this.persistenceContext = createPersistenceContext();
+		this.actionQueue = createActionQueue();
 
 		this.autoClear = options.shouldAutoClear();
 		this.autoClose = options.shouldAutoClose();
@@ -255,18 +254,29 @@ public class SessionImpl
 		// NOTE : pulse() already handles auto-join-ability correctly
 		getTransactionCoordinator().pulse();
 
-		final FlushMode initialMode;
-		if ( this.properties == null ) {
-			initialMode = fastSessionServices.initialSessionFlushMode;
+		// do not override explicitly set flush mode ( SessionBuilder#flushMode() )
+		if ( getHibernateFlushMode() == null ) {
+			final FlushMode initialMode;
+			if ( this.properties == null ) {
+				initialMode = fastSessionServices.initialSessionFlushMode;
+			}
+			else {
+				initialMode = ConfigurationHelper.getFlushMode( getSessionProperty( AvailableSettings.FLUSH_MODE ), FlushMode.AUTO );
+			}
+			getSession().setHibernateFlushMode( initialMode );
 		}
-		else {
-			initialMode = ConfigurationHelper.getFlushMode( getSessionProperty( AvailableSettings.FLUSH_MODE ), FlushMode.AUTO );
-		}
-		getSession().setHibernateFlushMode( initialMode );
 
 		if ( log.isTraceEnabled() ) {
 			log.tracef( "Opened Session [%s] at timestamp: %s", getSessionIdentifier(), getTimestamp() );
 		}
+	}
+
+	protected StatefulPersistenceContext createPersistenceContext() {
+		return new StatefulPersistenceContext( this );
+	}
+
+	protected ActionQueue createActionQueue() {
+		return new ActionQueue( this );
 	}
 
 	private LockOptions getLockOptionsForRead() {
@@ -1005,7 +1015,7 @@ public class SessionImpl
 	}
 
 	@Override
-	public final Object internalLoad(
+	public Object internalLoad(
 			String entityName,
 			Serializable id,
 			boolean eager,
@@ -1340,8 +1350,8 @@ public class SessionImpl
 	}
 
 	private void doFlush() {
-		checkTransactionNeededForUpdateOperation();
 		pulseTransactionCoordinator();
+		checkTransactionNeededForUpdateOperation();
 
 		try {
 			if ( persistenceContext.getCascadeLevel() > 0 ) {
@@ -1435,7 +1445,7 @@ public class SessionImpl
 		return result;
 	}
 
-	private void verifyImmutableEntityUpdate(HQLQueryPlan plan) {
+	protected void verifyImmutableEntityUpdate(HQLQueryPlan plan) {
 		if ( plan.isUpdate() ) {
 			List<String> primaryFromClauseTables = new ArrayList<>();
 			for ( QueryTranslator queryTranslator : plan.getTranslators() ) {
@@ -1513,7 +1523,7 @@ public class SessionImpl
 		queryParameters.validateParameters();
 
 		HQLQueryPlan plan = queryParameters.getQueryPlan();
-		if ( plan == null ) {
+		if ( plan == null || !plan.isShallow() ) {
 			plan = getQueryPlan( query, true );
 		}
 
@@ -1627,7 +1637,7 @@ public class SessionImpl
 			if ( li.getSession() != this ) {
 				throw new TransientObjectException( "The proxy was not associated with this session" );
 			}
-			return li.getIdentifier();
+			return li.getInternalIdentifier();
 		}
 		else {
 			EntityEntry entry = persistenceContext.getEntry( object );
@@ -1655,7 +1665,7 @@ public class SessionImpl
 	}
 
 	private Serializable getProxyIdentifier(Object proxy) {
-		return ( (HibernateProxy) proxy ).getHibernateLazyInitializer().getIdentifier();
+		return ( (HibernateProxy) proxy ).getHibernateLazyInitializer().getInternalIdentifier();
 	}
 
 	private FilterQueryPlan getFilterQueryPlan(
@@ -1904,7 +1914,7 @@ public class SessionImpl
 		}
 
 		// Since isLookupByNaturalKey is true there can be only one CriterionEntry and getCriterion() will
-		// return an instanceof NaturalIdentifier
+		// return an instance of NaturalIdentifier
 		final CriterionEntry criterionEntry = criteria.iterateExpressionEntries().next();
 		final NaturalIdentifier naturalIdentifier = (NaturalIdentifier) criterionEntry.getCriterion();
 
@@ -1925,7 +1935,7 @@ public class SessionImpl
 			final Object naturalIdValue = naturalIdValues.get( naturalIdProperty );
 
 			if ( naturalIdValue == null ) {
-				// A NaturalId property is missing from the critera query, can't use NaturalIdLoadAccess
+				// A NaturalId property is missing from the criteria query, can't use NaturalIdLoadAccess
 				return null;
 			}
 
@@ -3304,15 +3314,15 @@ public class SessionImpl
 				lockOptions = buildLockOptions( lockModeType, properties );
 				loadAccess.with( lockOptions );
 			}
-			
-			if ( getLoadQueryInfluencers().getEffectiveEntityGraph().getSemantic() == GraphSemantic.FETCH ) {
-				setFetchGraphLoadContext( getLoadQueryInfluencers().getEffectiveEntityGraph().getGraph() );
-			}
 
+			if ( getLoadQueryInfluencers().getEffectiveEntityGraph().getSemantic() == GraphSemantic.FETCH ) {
+				setEnforcingFetchGraph( true );
+			}
+			
 			return loadAccess.load( (Serializable) primaryKey );
 		}
 		catch ( EntityNotFoundException ignored ) {
-			// DefaultLoadEventListener.returnNarrowedProxy may throw ENFE (see HHH-7861 for details),
+			// DefaultLoadEventListener#returnNarrowedProxy() may throw ENFE (see HHH-7861 for details),
 			// which find() should not throw.  Find() should return null if the entity was not found.
 			if ( log.isDebugEnabled() ) {
 				String entityName = entityClass != null ? entityClass.getName(): null;
@@ -3334,7 +3344,7 @@ public class SessionImpl
 		}
 		catch ( JDBCException e ) {
 			if ( accessTransaction().isActive() && accessTransaction().getRollbackOnly() ) {
-				// Assume this is the similar to the WildFly / IronJacamar "feature" described under HHH-12472.
+				// Assume this is similar to the WildFly / IronJacamar "feature" described under HHH-12472.
 				// Just log the exception and return null.
 				if ( log.isDebugEnabled() ) {
 					log.debug( "JDBCException was thrown for a transaction marked for rollback; " +
@@ -3353,7 +3363,7 @@ public class SessionImpl
 		finally {
 			getLoadQueryInfluencers().getEffectiveEntityGraph().clear();
 			getLoadQueryInfluencers().setReadOnly( null );
-			setFetchGraphLoadContext( null );
+			setEnforcingFetchGraph( false );
 		}
 	}
 
@@ -3726,16 +3736,6 @@ public class SessionImpl
 		checkOpen();
 		return getEntityManagerFactory().findEntityGraphsByType( entityClass );
 	}
-	
-	@Override
-	public GraphImplementor getFetchGraphLoadContext() {
-		return this.fetchGraphLoadContext;
-	}
-	
-	@Override
-	public void setFetchGraphLoadContext(GraphImplementor fetchGraphLoadContext) {
-		this.fetchGraphLoadContext = fetchGraphLoadContext;
-	}
 
 	/**
 	 * Used by JDK serialization...
@@ -3777,9 +3777,9 @@ public class SessionImpl
 
 		loadQueryInfluencers = (LoadQueryInfluencers) ois.readObject();
 
-		// LoadQueryInfluencers.getEnabledFilters() tries to validate each enabled
-		// filter, which will fail when called before FilterImpl.afterDeserialize( factory );
-		// Instead lookup the filter by name and then call FilterImpl.afterDeserialize( factory ).
+		// LoadQueryInfluencers#getEnabledFilters() tries to validate each enabled
+		// filter, which will fail when called before FilterImpl#afterDeserialize( factory );
+		// Instead lookup the filter by name and then call FilterImpl#afterDeserialize( factory ).
 		for ( String filterName : loadQueryInfluencers.getEnabledFilterNames() ) {
 			( (FilterImpl) loadQueryInfluencers.getEnabledFilter( filterName ) ).afterDeserialize( getFactory() );
 		}
@@ -3792,4 +3792,15 @@ public class SessionImpl
 		}
 		return readOnly;
 	}
+
+	@Override
+	public boolean isEnforcingFetchGraph() {
+		return this.isEnforcingFetchGraph;
+	}
+
+	@Override
+	public void setEnforcingFetchGraph(boolean isEnforcingFetchGraph) {
+		this.isEnforcingFetchGraph = isEnforcingFetchGraph;
+	}
+
 }

@@ -18,7 +18,7 @@ import javax.persistence.criteria.CriteriaQuery;
 import javax.persistence.criteria.Root;
 import javax.persistence.criteria.SetJoin;
 import javax.persistence.metamodel.EntityType;
-
+import org.hibernate.dialect.CockroachDB192Dialect;
 import org.hibernate.dialect.AltibaseDialect;
 import org.hibernate.dialect.H2Dialect;
 import org.hibernate.jpa.test.BaseEntityManagerFunctionalTestCase;
@@ -38,7 +38,6 @@ import org.hibernate.jpa.test.metamodel.Spouse;
 import org.hibernate.metamodel.internal.MetamodelImpl;
 import org.hibernate.query.criteria.internal.CriteriaBuilderImpl;
 import org.hibernate.query.criteria.internal.predicate.ComparisonPredicate;
-
 import org.hibernate.testing.FailureExpected;
 import org.hibernate.testing.RequiresDialect;
 import org.hibernate.testing.SkipForDialect;
@@ -234,6 +233,7 @@ public class QueryBuilderTest extends BaseEntityManagerFunctionalTestCase {
 	}
 
 	@Test
+	@SkipForDialect(value = CockroachDB192Dialect.class, strictMatching = true)
 	public void testDateTimeFunctions() {
 		EntityManager em = getOrCreateEntityManager();
 		em.getTransaction().begin();

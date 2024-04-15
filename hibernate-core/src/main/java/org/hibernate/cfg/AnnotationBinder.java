@@ -123,7 +123,7 @@ import org.hibernate.annotations.Tuplizers;
 import org.hibernate.annotations.TypeDef;
 import org.hibernate.annotations.TypeDefs;
 import org.hibernate.annotations.Where;
-import org.hibernate.annotations.common.reflection.ClassLoadingException;
+import org.hibernate.annotations.common.reflection.ReflectionManager;
 import org.hibernate.annotations.common.reflection.XAnnotatedElement;
 import org.hibernate.annotations.common.reflection.XClass;
 import org.hibernate.annotations.common.reflection.XMethod;
@@ -132,6 +132,7 @@ import org.hibernate.annotations.common.reflection.XProperty;
 import org.hibernate.boot.model.IdGeneratorStrategyInterpreter;
 import org.hibernate.boot.model.IdentifierGeneratorDefinition;
 import org.hibernate.boot.model.TypeDefinition;
+import org.hibernate.boot.registry.classloading.spi.ClassLoaderService;
 import org.hibernate.boot.spi.InFlightMetadataCollector;
 import org.hibernate.boot.spi.InFlightMetadataCollector.EntityTableXref;
 import org.hibernate.boot.spi.MetadataBuildingContext;
@@ -146,6 +147,8 @@ import org.hibernate.cfg.annotations.QueryBinder;
 import org.hibernate.cfg.annotations.SimpleValueBinder;
 import org.hibernate.cfg.annotations.TableBinder;
 import org.hibernate.engine.OptimisticLockStyle;
+import org.hibernate.engine.config.spi.ConfigurationService;
+import org.hibernate.engine.config.spi.StandardConverters;
 import org.hibernate.engine.spi.FilterDefinition;
 import org.hibernate.id.PersistentIdentifierGenerator;
 import org.hibernate.internal.CoreMessageLogger;
@@ -304,19 +307,12 @@ public final class AnnotationBinder {
 		}
 	}
 
-	public static void bindPackage(String packageName, MetadataBuildingContext context) {
-		XPackage pckg;
-		try {
-			pckg = context.getBootstrapContext().getReflectionManager().packageForName( packageName );
-		}
-		catch (ClassLoadingException e) {
-			LOG.packageNotFound( packageName );
+	public static void bindPackage(ClassLoaderService cls, String packageName, MetadataBuildingContext context) {
+		final Package packaze = cls.packageForNameOrNull( packageName );
+		if ( packaze == null ) {
 			return;
 		}
-		catch ( ClassNotFoundException cnf ) {
-			LOG.packageNotFound( packageName );
-			return;
-		}
+		final XPackage pckg = HCANNHelper.toXPackage( context.getBootstrapContext().getReflectionManager(), packaze );
 
 		if ( pckg.isAnnotationPresent( SequenceGenerator.class ) ) {
 			SequenceGenerator ann = pckg.getAnnotation( SequenceGenerator.class );
@@ -349,7 +345,6 @@ public final class AnnotationBinder {
 		bindQueries( pckg, context );
 		bindFilterDefs( pckg, context );
 		bindTypeDefs( pckg, context );
-		bindFetchProfiles( pckg, context );
 		BinderHelper.bindAnyMetaDefs( pckg, context );
 
 	}
@@ -371,59 +366,67 @@ public final class AnnotationBinder {
 		context.getMetadataCollector().addIdentifierGenerator( buildIdGenerator( def, context ) );
 	}
 
-	private static void bindQueries(XAnnotatedElement annotatedElement, MetadataBuildingContext context) {
-		{
-			SqlResultSetMapping ann = annotatedElement.getAnnotation( SqlResultSetMapping.class );
-			QueryBinder.bindSqlResultSetMapping( ann, context, false );
-		}
-		{
-			SqlResultSetMappings ann = annotatedElement.getAnnotation( SqlResultSetMappings.class );
-			if ( ann != null ) {
-				for ( SqlResultSetMapping current : ann.value() ) {
-					QueryBinder.bindSqlResultSetMapping( current, context, false );
-				}
+	private static void bindNamedJpaQueries(XAnnotatedElement annotatedElement, MetadataBuildingContext context) {
+		QueryBinder.bindSqlResultSetMapping(
+				annotatedElement.getAnnotation( SqlResultSetMapping.class ),
+				context,
+				false
+		);
+
+		final SqlResultSetMappings ann = annotatedElement.getAnnotation( SqlResultSetMappings.class );
+		if ( ann != null ) {
+			for ( SqlResultSetMapping current : ann.value() ) {
+				QueryBinder.bindSqlResultSetMapping( current, context, false );
 			}
 		}
-		{
-			NamedQuery ann = annotatedElement.getAnnotation( NamedQuery.class );
-			QueryBinder.bindQuery( ann, context, false );
-		}
-		{
-			org.hibernate.annotations.NamedQuery ann = annotatedElement.getAnnotation(
-					org.hibernate.annotations.NamedQuery.class
-			);
-			QueryBinder.bindQuery( ann, context );
-		}
-		{
-			NamedQueries ann = annotatedElement.getAnnotation( NamedQueries.class );
-			QueryBinder.bindQueries( ann, context, false );
-		}
-		{
-			org.hibernate.annotations.NamedQueries ann = annotatedElement.getAnnotation(
-					org.hibernate.annotations.NamedQueries.class
-			);
-			QueryBinder.bindQueries( ann, context );
-		}
-		{
-			NamedNativeQuery ann = annotatedElement.getAnnotation( NamedNativeQuery.class );
-			QueryBinder.bindNativeQuery( ann, context, false );
-		}
-		{
-			org.hibernate.annotations.NamedNativeQuery ann = annotatedElement.getAnnotation(
-					org.hibernate.annotations.NamedNativeQuery.class
-			);
-			QueryBinder.bindNativeQuery( ann, context );
-		}
-		{
-			NamedNativeQueries ann = annotatedElement.getAnnotation( NamedNativeQueries.class );
-			QueryBinder.bindNativeQueries( ann, context, false );
-		}
-		{
-			org.hibernate.annotations.NamedNativeQueries ann = annotatedElement.getAnnotation(
-					org.hibernate.annotations.NamedNativeQueries.class
-			);
-			QueryBinder.bindNativeQueries( ann, context );
-		}
+
+		QueryBinder.bindQuery(
+				annotatedElement.getAnnotation( NamedQuery.class ),
+				context,
+				false
+		);
+
+		QueryBinder.bindQueries(
+				annotatedElement.getAnnotation( NamedQueries.class ),
+				context,
+				false
+		);
+
+		QueryBinder.bindNativeQuery(
+				annotatedElement.getAnnotation( NamedNativeQuery.class ),
+				context,
+				false
+		);
+
+		QueryBinder.bindNativeQueries(
+				annotatedElement.getAnnotation( NamedNativeQueries.class ),
+				context,
+				false
+		);
+	}
+
+	private static void bindQueries(XAnnotatedElement annotatedElement, MetadataBuildingContext context) {
+		bindNamedJpaQueries( annotatedElement, context );
+
+		QueryBinder.bindQuery(
+				annotatedElement.getAnnotation( org.hibernate.annotations.NamedQuery.class ),
+				context
+		);
+
+		QueryBinder.bindQueries(
+				annotatedElement.getAnnotation( org.hibernate.annotations.NamedQueries.class ),
+				context
+		);
+
+		QueryBinder.bindNativeQuery(
+				annotatedElement.getAnnotation( org.hibernate.annotations.NamedNativeQuery.class ),
+				context
+		);
+
+		QueryBinder.bindNativeQueries(
+				annotatedElement.getAnnotation( org.hibernate.annotations.NamedNativeQueries.class ),
+				context
+		);
 
 		// NamedStoredProcedureQuery handling ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 		bindNamedStoredProcedureQuery(
@@ -538,7 +541,7 @@ public final class AnnotationBinder {
 			LOG.unsupportedMappedSuperclassWithEntityInheritance( clazzToProcess.getName() );
 		}
 
-		//TODO: be more strict with secondarytable allowance (not for ids, not for secondary table join columns etc)
+		//TODO: be more strict with secondary table allowance (not for ids, not for secondary table join columns etc)
 		InheritanceState inheritanceState = inheritanceStatePerClass.get( clazzToProcess );
 		AnnotatedClassType classType = context.getMetadataCollector().getClassType( clazzToProcess );
 
@@ -587,7 +590,6 @@ public final class AnnotationBinder {
 		bindQueries( clazzToProcess, context );
 		bindFilterDefs( clazzToProcess, context );
 		bindTypeDefs( clazzToProcess, context );
-		bindFetchProfiles( clazzToProcess, context );
 		BinderHelper.bindAnyMetaDefs( clazzToProcess, context );
 
 		String schema = "";
@@ -709,15 +711,17 @@ public final class AnnotationBinder {
 				else {
 					final PrimaryKeyJoinColumn pkJoinColumn = clazzToProcess.getAnnotation( PrimaryKeyJoinColumn.class );
 					final PrimaryKeyJoinColumns pkJoinColumns = clazzToProcess.getAnnotation( PrimaryKeyJoinColumns.class );
-
-					if ( pkJoinColumns != null && pkJoinColumns.foreignKey().value() == ConstraintMode.NO_CONSTRAINT ) {
+					final boolean noConstraintByDefault = context.getBuildingOptions().isNoConstraintByDefault();
+					if ( pkJoinColumns != null && ( pkJoinColumns.foreignKey().value() == ConstraintMode.NO_CONSTRAINT
+							|| pkJoinColumns.foreignKey().value() == ConstraintMode.PROVIDER_DEFAULT && noConstraintByDefault ) ) {
 						// don't apply a constraint based on ConstraintMode
 						key.setForeignKeyName( "none" );
 					}
 					else if ( pkJoinColumns != null && !StringHelper.isEmpty( pkJoinColumns.foreignKey().name() ) ) {
 						key.setForeignKeyName( pkJoinColumns.foreignKey().name() );
 					}
-					else if ( pkJoinColumn != null && pkJoinColumn.foreignKey().value() == ConstraintMode.NO_CONSTRAINT ) {
+					else if ( pkJoinColumn != null && ( pkJoinColumn.foreignKey().value() == ConstraintMode.NO_CONSTRAINT
+							|| pkJoinColumn.foreignKey().value() == ConstraintMode.PROVIDER_DEFAULT && noConstraintByDefault )) {
 						// don't apply a constraint based on ConstraintMode
 						key.setForeignKeyName( "none" );
 					}
@@ -1034,7 +1038,7 @@ public final class AnnotationBinder {
 			);
 			AccessType propertyAccessor = entityBinder.getPropertyAccessor( compositeClass );
 			//In JPA 2, there is a shortcut if the IdClass is the Pk of the associated class pointed to by the id
-			//it ought to be treated as an embedded and not a real IdClass (at least in the Hibernate's internal way
+			//it ought to be treated as an embedded and not a real IdClass (at least in the Hibernate's internal way)
 			final boolean isFakeIdClass = isIdClassPkOfTheAssociatedEntity(
 					elementsToProcess,
 					compositeClass,
@@ -1417,6 +1421,20 @@ public final class AnnotationBinder {
 
 	}
 
+	public static void bindFetchProfilesForClass(XClass clazzToProcess, MetadataBuildingContext context) {
+		bindFetchProfiles( clazzToProcess, context );
+	}
+
+	public static void bindFetchProfilesForPackage(ClassLoaderService cls, String packageName, MetadataBuildingContext context) {
+		final Package packaze = cls.packageForNameOrNull( packageName );
+		if ( packaze == null ) {
+			return;
+		}
+		final ReflectionManager reflectionManager = context.getBootstrapContext().getReflectionManager();
+		final XPackage pckg = HCANNHelper.toXPackage( reflectionManager, packaze );
+		bindFetchProfiles( pckg, context );
+	}
+
 	private static void bindFetchProfiles(XAnnotatedElement annotatedElement, MetadataBuildingContext context) {
 		FetchProfile fetchProfileAnnotation = annotatedElement.getAnnotation( FetchProfile.class );
 		FetchProfiles fetchProfileAnnotations = annotatedElement.getAnnotation( FetchProfiles.class );
@@ -1484,8 +1502,7 @@ public final class AnnotationBinder {
 			MetadataBuildingContext context) {
 		int idPropertyCounter = 0;
 
-		Collection<XProperty> properties = propertyContainer.getProperties();
-		for ( XProperty p : properties ) {
+		for ( XProperty p : propertyContainer.propertyIterator() ) {
 			final int currentIdPropertyCounter = addProperty(
 					propertyContainer,
 					p,
@@ -1570,7 +1587,7 @@ public final class AnnotationBinder {
 								}
 							}
 							if ( isRequiredAnnotationPresent ) {
-								//create a PropertyData fpr the specJ property holding the mapping
+								//create a PropertyData for the specJ property holding the mapping
 								PropertyData specJPropertyData = new PropertyInferredData(
 										declaringClass,
 										//same dec
@@ -2013,7 +2030,7 @@ public final class AnnotationBinder {
 				}
 				{
 					Column[] keyColumns = null;
-					//JPA 2 has priority and has different default column values, differenciate legacy from JPA 2
+					//JPA 2 has priority and has different default column values, differentiate legacy from JPA 2
 					Boolean isJPA2 = null;
 					if ( property.isAnnotationPresent( MapKeyColumn.class ) ) {
 						isJPA2 = Boolean.TRUE;
@@ -2044,7 +2061,7 @@ public final class AnnotationBinder {
 				}
 				{
 					JoinColumn[] joinKeyColumns = null;
-					//JPA 2 has priority and has different default column values, differenciate legacy from JPA 2
+					//JPA 2 has priority and has different default column values, differentiate legacy from JPA 2
 					Boolean isJPA2 = null;
 					if ( property.isAnnotationPresent( MapKeyJoinColumns.class ) ) {
 						isJPA2 = Boolean.TRUE;
@@ -2546,7 +2563,7 @@ public final class AnnotationBinder {
 			}
 			associationTableBinder.setUniqueConstraints( uniqueConstraints );
 			associationTableBinder.setJpaIndex( jpaIndexes );
-			//set check constaint in the second pass
+			//set check constraint in the second pass
 			annJoins = joins.length == 0 ? null : joins;
 			annInverseJoins = inverseJoins == null || inverseJoins.length == 0 ? null : inverseJoins;
 		}
@@ -2584,7 +2601,7 @@ public final class AnnotationBinder {
 			boolean isIdentifierMapper,
 			MetadataBuildingContext buildingContext,
 			boolean isComponentEmbedded,
-			boolean isId, //is a identifier
+			boolean isId, //is an identifier
 			Map<XClass, InheritanceState> inheritanceStatePerClass,
 			String referencedEntityName, //is a component who is overridden by a @MapsId
 			Ejb3JoinColumn[] columns) {
@@ -2731,7 +2748,7 @@ public final class AnnotationBinder {
 		//add elements of the embeddable superclass
 		XClass superClass = xClassProcessed.getSuperclass();
 		while ( superClass != null && superClass.isAnnotationPresent( MappedSuperclass.class ) ) {
-			//FIXME: proper support of typevariables incl var resolved at upper levels
+			//FIXME: proper support of type variables incl var resolved at upper levels
 			propContainer = new PropertyContainer( superClass, xClassProcessed, propertyAccessor );
 			addElementsOfClass( classElements, propContainer, buildingContext );
 			superClass = superClass.getSuperclass();
@@ -3042,7 +3059,7 @@ public final class AnnotationBinder {
 		final JoinColumn joinColumn = property.getAnnotation( JoinColumn.class );
 		final JoinColumns joinColumns = property.getAnnotation( JoinColumns.class );
 
-		//Make sure that JPA1 key-many-to-one columns are read only tooj
+		//Make sure that JPA1 key-many-to-one columns are read only too
 		boolean hasSpecjManyToOne=false;
 		if ( context.getBuildingOptions().isSpecjProprietarySyntaxEnabled() ) {
 			String columnName = "";
@@ -3074,7 +3091,8 @@ public final class AnnotationBinder {
 				property,
 				propertyHolder.getOverriddenForeignKey( StringHelper.qualify( propertyHolder.getPath(), propertyName ) ),
 				joinColumn,
-				joinColumns
+				joinColumns,
+				context
 		);
 
 		String path = propertyHolder.getPath() + "." + propertyName;
@@ -3113,7 +3131,14 @@ public final class AnnotationBinder {
 		propertyBinder.setCascade( cascadeStrategy );
 		propertyBinder.setProperty( property );
 		propertyBinder.setXToMany( true );
-		propertyBinder.makePropertyAndBind();
+
+		final Property boundProperty = propertyBinder.makePropertyAndBind();
+		if ( joinColumn != null ) {
+			boundProperty.setOptional( joinColumn.nullable() && optional );
+		}
+		else {
+			boundProperty.setOptional( optional );
+		}
 	}
 
 	protected static void defineFetchingStrategy(ToOne toOne, XProperty property) {
@@ -3187,7 +3212,7 @@ public final class AnnotationBinder {
 			KeyValue identifier = propertyHolder.getIdentifier();
 			if ( identifier == null ) {
 				//this is a @OneToOne in an @EmbeddedId (the persistentClass.identifier is not set yet, it's being built)
-				//by definition the PK cannot refers to itself so it cannot map to itself
+				//by definition the PK cannot refer to itself so it cannot map to itself
 				mapToPK = false;
 			}
 			else {
@@ -3413,9 +3438,13 @@ public final class AnnotationBinder {
 			XProperty property,
 			javax.persistence.ForeignKey fkOverride,
 			JoinColumn joinColumn,
-			JoinColumns joinColumns) {
-		if ( ( joinColumn != null && joinColumn.foreignKey().value() == ConstraintMode.NO_CONSTRAINT )
-				|| ( joinColumns != null && joinColumns.foreignKey().value() == ConstraintMode.NO_CONSTRAINT ) ) {
+			JoinColumns joinColumns,
+			MetadataBuildingContext context) {
+		final boolean noConstraintByDefault = context.getBuildingOptions().isNoConstraintByDefault();
+		if ( ( joinColumn != null && ( joinColumn.foreignKey().value() == ConstraintMode.NO_CONSTRAINT
+				|| joinColumn.foreignKey().value() == ConstraintMode.PROVIDER_DEFAULT && noConstraintByDefault ) )
+				|| ( joinColumns != null && ( joinColumns.foreignKey().value() == ConstraintMode.NO_CONSTRAINT
+				|| joinColumns.foreignKey().value() == ConstraintMode.PROVIDER_DEFAULT && noConstraintByDefault ) ) ) {
 			value.setForeignKeyName( "none" );
 		}
 		else {
@@ -3424,7 +3453,8 @@ public final class AnnotationBinder {
 				value.setForeignKeyName( fk.name() );
 			}
 			else {
-				if ( fkOverride != null && fkOverride.value() == ConstraintMode.NO_CONSTRAINT ) {
+				if ( fkOverride != null && ( fkOverride.value() == ConstraintMode.NO_CONSTRAINT
+						|| fkOverride.value() == ConstraintMode.PROVIDER_DEFAULT && noConstraintByDefault ) ) {
 					value.setForeignKeyName( "none" );
 				}
 				else if ( fkOverride != null ) {
@@ -3524,7 +3554,7 @@ public final class AnnotationBinder {
 			InheritanceState state = new InheritanceState( clazz, inheritanceStatePerClass, buildingContext );
 			if ( superclassState != null ) {
 				//the classes are ordered thus preventing an NPE
-				//FIXME if an entity has subclasses annotated @MappedSperclass wo sub @Entity this is wrong
+				//FIXME if an entity has subclasses annotated @MappedSuperclass wo sub @Entity this is wrong
 				superclassState.setHasSiblings( true );
 				InheritanceState superEntityState = InheritanceState.getInheritanceStateOfSuperEntity(
 						clazz, inheritanceStatePerClass

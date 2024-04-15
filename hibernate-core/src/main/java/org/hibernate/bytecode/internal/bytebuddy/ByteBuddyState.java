@@ -30,6 +30,7 @@ import org.hibernate.proxy.ProxyConfiguration;
 import org.hibernate.proxy.ProxyFactory;
 
 import net.bytebuddy.ByteBuddy;
+import net.bytebuddy.ClassFileVersion;
 import net.bytebuddy.TypeCache;
 import net.bytebuddy.asm.AsmVisitorWrapper.ForDeclaredMethods;
 import net.bytebuddy.asm.MemberSubstitution;
@@ -71,7 +72,11 @@ public final class ByteBuddyState {
 	private final TypeCache<TypeCache.SimpleKey> basicProxyCache;
 
 	ByteBuddyState() {
-		this.byteBuddy = new ByteBuddy().with( TypeValidation.DISABLED );
+		this( ClassFileVersion.ofThisVm( ClassFileVersion.JAVA_V8 ) );
+	}
+
+	ByteBuddyState(ClassFileVersion classFileVersion) {
+		this.byteBuddy = new ByteBuddy( classFileVersion ).with( TypeValidation.DISABLED );
 
 		this.proxyCache = new TypeCache.WithInlineExpunction<TypeCache.SimpleKey>( TypeCache.Sort.WEAK );
 		this.basicProxyCache = new TypeCache.WithInlineExpunction<TypeCache.SimpleKey>( TypeCache.Sort.WEAK );
@@ -179,6 +184,10 @@ public final class ByteBuddyState {
 						.load( referenceClass.getClassLoader(), resolveClassLoadingStrategy( referenceClass ) )
 						.getLoaded(),
 				cache );
+	}
+
+	public Unloaded<?> make(Function<ByteBuddy, DynamicType.Builder<?>> makeProxyFunction) {
+		return make( makeProxyFunction.apply( byteBuddy ) );
 	}
 
 	private Unloaded<?> make(DynamicType.Builder<?> builder) {

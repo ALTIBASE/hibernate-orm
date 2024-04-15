@@ -566,7 +566,7 @@ public class Ejb3Column {
 					}
 
 					final String columnName;
-					if ( "".equals( col.name() ) ) {
+					if ( col.name() != null && col.name().isEmpty() ) {
 						columnName = null;
 					}
 					else {
@@ -632,7 +632,7 @@ public class Ejb3Column {
 		}
 	}
 
-	//must only be called after all setters are defined and before bind
+	//must only be called after all setters are defined and before binding
 	private void extractDataFromPropertyData(PropertyData inferredData) {
 		if ( inferredData != null ) {
 			XProperty property = inferredData.getProperty();

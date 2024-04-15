@@ -13,6 +13,7 @@ import javax.persistence.JoinColumn;
 import javax.persistence.JoinColumns;
 
 import org.hibernate.AnnotationException;
+import org.hibernate.FetchMode;
 import org.hibernate.MappingException;
 import org.hibernate.annotations.LazyGroup;
 import org.hibernate.annotations.common.reflection.XClass;
@@ -48,7 +49,7 @@ public class OneToOneSecondPass implements SecondPass {
 	private String cascadeStrategy;
 	private Ejb3JoinColumn[] joinColumns;
 
-	//that suck, we should read that from the property mainly
+	//that sucks, we should read that from the property mainly
 	public OneToOneSecondPass(
 			String mappedBy,
 			String ownerEntity,
@@ -102,7 +103,8 @@ public class OneToOneSecondPass implements SecondPass {
 				inferredData.getProperty(),
 				inferredData.getProperty().getAnnotation( javax.persistence.ForeignKey.class ),
 				inferredData.getProperty().getAnnotation( JoinColumn.class ),
-				inferredData.getProperty().getAnnotation( JoinColumns.class )
+				inferredData.getProperty().getAnnotation( JoinColumns.class),
+				buildingContext
 		);
 
 		PropertyBinder binder = new PropertyBinder();
@@ -235,12 +237,6 @@ public class OneToOneSecondPass implements SecondPass {
 				boolean referenceToPrimaryKey  = referencesDerivedId || mappedBy == null;
 				value.setReferenceToPrimaryKey( referenceToPrimaryKey );
 
-				// If the other side is a derived ID, prevent an infinite
-				// loop of attempts to resolve identifiers.
-				if ( referencesDerivedId ) {
-					( (ManyToOne) otherSideProperty.getValue() ).setReferenceToPrimaryKey( false );
-				}
-
 				String propertyRef = value.getReferencedPropertyName();
 				if ( propertyRef != null ) {
 					buildingContext.getMetadataCollector().addUniquePropertyReference(
@@ -269,7 +265,8 @@ public class OneToOneSecondPass implements SecondPass {
 	 * Note:<br/>
 	 * <ul>
 	 * <li>From the mappedBy side we should not create the PK nor the FK, this is handled from the other side.</li>
-	 * <li>This method is a dirty dupe of EntityBinder.bindSecondaryTable</i>.
+	 * <li>This method is a dirty dupe of EntityBinder.bindSecondaryTable</li>.
+	 * </ul>
 	 * </p>
 	 */
 	private Join buildJoinFromMappedBySide(PersistentClass persistentClass, Property otherSideProperty, Join originalJoin) {

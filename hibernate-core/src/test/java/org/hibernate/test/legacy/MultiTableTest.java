@@ -8,10 +8,6 @@
 //$Id: MultiTableTest.java 10977 2006-12-12 23:28:04Z steve.ebersole@jboss.com $
 package org.hibernate.test.legacy;
 
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertSame;
-import static org.junit.Assert.assertTrue;
-
 import java.io.Serializable;
 import java.sql.Connection;
 import java.sql.SQLException;
@@ -22,7 +18,6 @@ import java.util.HashSet;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Set;
-
 import org.hibernate.Criteria;
 import org.hibernate.FetchMode;
 import org.hibernate.LockMode;
@@ -30,6 +25,7 @@ import org.hibernate.Session;
 import org.hibernate.Transaction;
 import org.hibernate.criterion.Restrictions;
 import org.hibernate.dialect.AbstractHANADialect;
+import org.hibernate.dialect.CockroachDB192Dialect;
 import org.hibernate.dialect.AltibaseDialect;
 import org.hibernate.dialect.H2Dialect;
 import org.hibernate.dialect.MySQLDialect;
@@ -37,6 +33,10 @@ import org.hibernate.engine.spi.SessionImplementor;
 import org.hibernate.jdbc.Work;
 import org.hibernate.testing.SkipForDialect;
 import org.junit.Test;
+
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertSame;
+import static org.junit.Assert.assertTrue;
 
 
 public class MultiTableTest extends LegacyTestCase {
@@ -250,7 +250,8 @@ public class MultiTableTest extends LegacyTestCase {
 	}
 
 	@Test
-	@SkipForDialect(value = AltibaseDialect.class,
+	@SkipForDialect( value = CockroachDB192Dialect.class )
+	@SkipForDialect( value = AltibaseDialect.class,
 			comment = "Altibase will occur SQLException. ex) `JOIN is not allowed in SELECT FOR UPDATE statements.` ")
 	public void testMultiTable() throws Exception {
 		Session s = openSession();
@@ -395,7 +396,8 @@ public class MultiTableTest extends LegacyTestCase {
 	}
 
 	@Test
-	@SkipForDialect(value = AltibaseDialect.class,
+	@SkipForDialect( value = CockroachDB192Dialect.class )
+	@SkipForDialect( value = AltibaseDialect.class,
 			comment = "Altibase will occur SQLException. ex) `JOIN is not allowed in SELECT FOR UPDATE statements.` ")
 	public void testMultiTableGeneratedId() throws Exception {
 		Session s = openSession();
@@ -520,6 +522,7 @@ public class MultiTableTest extends LegacyTestCase {
 	}
 
 	@Test
+	@SkipForDialect(value = CockroachDB192Dialect.class, comment = "https://github.com/cockroachdb/cockroach/issues/27871")
 	public void testMultiTableCollections() throws Exception {
 		Session s = openSession();
 		Transaction t = s.beginTransaction();
@@ -592,6 +595,7 @@ public class MultiTableTest extends LegacyTestCase {
 	}
 
 	@Test
+	@SkipForDialect(value = CockroachDB192Dialect.class, comment = "https://github.com/cockroachdb/cockroach/issues/27871")
 	public void testMultiTableManyToOne() throws Exception {
 		Session s = openSession();
 		Transaction t = s.beginTransaction();

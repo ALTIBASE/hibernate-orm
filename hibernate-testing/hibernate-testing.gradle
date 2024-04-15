@@ -5,9 +5,10 @@
  * See the lgpl.txt file in the root directory or <http://www.gnu.org/licenses/lgpl-2.1.html>.
  */
 
+description = 'Support for testing Hibernate ORM functionality'
+
 apply from: rootProject.file( 'gradle/published-java-module.gradle' )
 
-description = 'Support for testing Hibernate ORM functionality'
 
 dependencies {
     compile project( ':hibernate-core' )
@@ -17,7 +18,7 @@ dependencies {
     compile( libraries.byteman_install )
     compile( libraries.byteman_bmunit )
     compile( libraries.xapool )
-    compile( libraries.log4j )
+    compile( libraries.log4j2 )
     compile ( libraries.jboss_jta ) {
         transitive=false;
     }

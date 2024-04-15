@@ -264,6 +264,17 @@ public class SimpleValue implements KeyValue {
 
 	private IdentifierGenerator identifierGenerator;
 
+	/**
+	 * Returns the cached identifierGenerator.
+	 *
+	 * @return IdentifierGenerator null if
+	 * {@link #createIdentifierGenerator(IdentifierGeneratorFactory, Dialect, String, String, RootClass)} was never
+	 * completed.
+	 */
+	public IdentifierGenerator getIdentifierGenerator() {
+		return identifierGenerator;
+	}
+
 	@Override
 	public IdentifierGenerator createIdentifierGenerator(
 			IdentifierGeneratorFactory identifierGeneratorFactory,
@@ -488,7 +499,7 @@ public class SimpleValue implements KeyValue {
 			throw new MappingException( msg );
 		}
 
-		return result;
+		return type = result;
 	}
 
 	@Override
@@ -520,7 +531,7 @@ public class SimpleValue implements KeyValue {
 							.getServiceRegistry()
 							.getService( ClassLoaderService.class )
 			).getName();
-			// todo : to fully support isNationalized here we need do the process hinted at above
+			// todo : to fully support isNationalized here we need to do the process hinted at above
 			// 		essentially, much of the logic from #buildAttributeConverterTypeAdapter wrt resolving
 			//		a (1) SqlTypeDescriptor, a (2) JavaTypeDescriptor and dynamically building a BasicType
 			// 		combining them.
@@ -622,7 +633,7 @@ public class SimpleValue implements KeyValue {
 			jdbcTypeCode = NationalizedTypeMappings.toNationalizedTypeCode( jdbcTypeCode );
 		}
 
-		// find the standard SqlTypeDescriptor for that JDBC type code (allow itr to be remapped if needed!)
+		// find the standard SqlTypeDescriptor for that JDBC type code (allow it to be remapped if needed!)
 		final SqlTypeDescriptor sqlTypeDescriptor = getMetadata()
 				.getMetadataBuildingOptions()
 				.getServiceRegistry()

@@ -27,13 +27,10 @@ import org.hibernate.engine.spi.SessionFactoryImplementor;
 import org.hibernate.engine.spi.SessionImplementor;
 import org.hibernate.engine.spi.Status;
 import org.hibernate.event.internal.AbstractLockUpgradeEventListener;
-import org.hibernate.event.service.spi.EventListenerRegistry;
 import org.hibernate.event.spi.EventSource;
-import org.hibernate.event.spi.EventType;
 import org.hibernate.event.spi.LoadEvent;
 import org.hibernate.event.spi.LoadEventListener;
 import org.hibernate.event.spi.PostLoadEvent;
-import org.hibernate.event.spi.PostLoadEventListener;
 import org.hibernate.internal.CoreLogging;
 import org.hibernate.internal.CoreMessageLogger;
 import org.hibernate.persister.entity.EntityPersister;
@@ -354,20 +351,11 @@ public class CacheEntityLoaderHelper extends AbstractLockUpgradeEventListener {
 				.setId( entityId )
 				.setPersister( persister );
 
-		for ( PostLoadEventListener listener : postLoadEventListeners( session ) ) {
-			listener.onPostLoad( postLoadEvent );
-		}
+		session.getSessionFactory()
+				.getFastSessionServices()
+				.firePostLoadEvent( postLoadEvent );
 
 		return entity;
-	}
-
-	private Iterable<PostLoadEventListener> postLoadEventListeners(EventSource session) {
-		return session
-				.getFactory()
-				.getServiceRegistry()
-				.getService( EventListenerRegistry.class )
-				.getEventListenerGroup( EventType.POST_LOAD )
-				.listeners();
 	}
 
 	public static class PersistenceContextEntry {

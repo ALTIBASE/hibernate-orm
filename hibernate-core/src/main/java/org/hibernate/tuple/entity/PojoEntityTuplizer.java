@@ -88,13 +88,17 @@ public class PojoEntityTuplizer extends AbstractEntityTuplizer {
 
 		final Set<Class> proxyInterfaces = ProxyFactoryHelper.extractProxyInterfaces( persistentClass, entityName );
 
-		ProxyFactoryHelper.validateProxyability( persistentClass );
-
 		Method proxyGetIdentifierMethod = ProxyFactoryHelper.extractProxyGetIdentifierMethod( idGetter, proxyInterface );
 		Method proxySetIdentifierMethod = ProxyFactoryHelper.extractProxySetIdentifierMethod( idSetter, proxyInterface );
 
 		ProxyFactory pf = buildProxyFactoryInternal( persistentClass, idGetter, idSetter );
 		try {
+
+			ProxyFactoryHelper.validateGetterSetterMethodProxyability( "Getter", proxyGetIdentifierMethod );
+			ProxyFactoryHelper.validateGetterSetterMethodProxyability( "Setter", proxySetIdentifierMethod );
+
+			ProxyFactoryHelper.validateProxyability( persistentClass );
+
 			pf.postInstantiate(
 					entityName,
 					mappedClass,
@@ -219,7 +223,7 @@ public class PojoEntityTuplizer extends AbstractEntityTuplizer {
 			}
 		}
 
-		// clear the fields that are marked as dirty in the dirtyness tracker
+		// clear the fields that are marked as dirty in the dirtiness tracker
 		if ( entity instanceof SelfDirtinessTracker ) {
 			( (SelfDirtinessTracker) entity ).$$_hibernate_clearDirtyAttributes();
 		}

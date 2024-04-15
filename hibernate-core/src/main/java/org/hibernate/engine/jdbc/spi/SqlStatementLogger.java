@@ -6,14 +6,14 @@
  */
 package org.hibernate.engine.jdbc.spi;
 
-import java.sql.Statement;
-
 import org.hibernate.engine.jdbc.internal.FormatStyle;
 import org.hibernate.engine.jdbc.internal.Formatter;
 import org.hibernate.internal.CoreLogging;
 import org.hibernate.internal.build.AllowSysOut;
-
 import org.jboss.logging.Logger;
+
+import java.sql.Statement;
+import java.util.concurrent.TimeUnit;
 
 /**
  * Centralize logging for SQL statements.
@@ -26,6 +26,7 @@ public class SqlStatementLogger {
 
 	private boolean logToStdout;
 	private boolean format;
+	private final boolean highlight;
 
 	/**
 	 * Configuration value that indicates slow query. (In milliseconds) 0 - disabled.
@@ -36,29 +37,42 @@ public class SqlStatementLogger {
 	 * Constructs a new SqlStatementLogger instance.
 	 */
 	public SqlStatementLogger() {
-		this( false, false );
+		this( false, false, false );
 	}
 
 	/**
 	 * Constructs a new SqlStatementLogger instance.
 	 *
 	 * @param logToStdout Should we log to STDOUT in addition to our internal logger.
-	 * @param format Should we format the statements prior to logging
+	 * @param format Should we format the statements in the console and log
 	 */
 	public SqlStatementLogger(boolean logToStdout, boolean format) {
-		this( logToStdout, format, 0 );
+		this( logToStdout, format, false );
 	}
 
 	/**
 	 * Constructs a new SqlStatementLogger instance.
 	 *
 	 * @param logToStdout Should we log to STDOUT in addition to our internal logger.
-	 * @param format Should we format the statements prior to logging
+	 * @param format Should we format the statements in the console and log
+	 * @param highlight Should we highlight the statements in the console
+	 */
+	public SqlStatementLogger(boolean logToStdout, boolean format, boolean highlight) {
+		this( logToStdout, format, highlight, 0 );
+	}
+
+	/**
+	 * Constructs a new SqlStatementLogger instance.
+	 *
+	 * @param logToStdout Should we log to STDOUT in addition to our internal logger.
+	 * @param format Should we format the statements in the console and log
+	 * @param highlight Should we highlight the statements in the console
 	 * @param logSlowQuery Should we logs query which executed slower than specified milliseconds. 0 - disabled.
 	 */
-	public SqlStatementLogger(boolean logToStdout, boolean format, long logSlowQuery) {
+	public SqlStatementLogger(boolean logToStdout, boolean format, boolean highlight, long logSlowQuery) {
 		this.logToStdout = logToStdout;
 		this.format = format;
+		this.highlight = highlight;
 		this.logSlowQuery = logSlowQuery;
 	}
 
@@ -119,14 +133,18 @@ public class SqlStatementLogger {
 	 */
 	@AllowSysOut
 	public void logStatement(String statement, Formatter formatter) {
-		if ( format ) {
-			if ( logToStdout || LOG.isDebugEnabled() ) {
+		if ( logToStdout || LOG.isDebugEnabled() ) {
+			if ( format ) {
 				statement = formatter.format( statement );
+			}
+			if ( highlight ) {
+				statement = FormatStyle.HIGHLIGHT.getFormatter().format( statement );
 			}
 		}
 		LOG.debug( statement );
 		if ( logToStdout ) {
-			System.out.println( "Hibernate: " + statement );
+			String prefix = highlight ? "\u001b[35m[Hibernate]\u001b[0m " : "Hibernate: ";
+			System.out.println( prefix + statement );
 		}
 	}
 
@@ -134,34 +152,34 @@ public class SqlStatementLogger {
 	 * Log a slow SQL query
 	 *
 	 * @param statement SQL statement.
-	 * @param startTime Start time in milliseconds.
+	 * @param startTimeNanos Start time in nanoseconds.
 	 */
-	public void logSlowQuery(Statement statement, long startTime) {
+	public void logSlowQuery(Statement statement, long startTimeNanos) {
 		if ( logSlowQuery < 1 ) {
 			return;
 		}
-		logSlowQuery( statement.toString(), startTime );
+		logSlowQuery( statement.toString(), startTimeNanos );
 	}
 
 	/**
 	 * Log a slow SQL query
 	 *
 	 * @param sql The SQL query.
-	 * @param startTime Start time in milliseconds.
+	 * @param startTimeNanos Start time in nanoseconds.
 	 */
 	@AllowSysOut
-	public void logSlowQuery(String sql, long startTime) {
+	public void logSlowQuery(String sql, long startTimeNanos) {
 		if ( logSlowQuery < 1 ) {
 			return;
 		}
-		assert startTime > 0 : "startTime is invalid!";
+		if ( startTimeNanos <= 0 ) {
+			throw new IllegalArgumentException( "startTimeNanos [" + startTimeNanos + "] should be greater than 0!" );
+		}
 
-		long spent = System.currentTimeMillis() - startTime;
+		long queryExecutionMillis = TimeUnit.NANOSECONDS.toMillis( System.nanoTime() - startTimeNanos );
 
-		assert spent >= 0 : "startTime is invalid!";
-
-		if ( spent > logSlowQuery ) {
-			String logData = "SlowQuery: " + spent + " milliseconds. SQL: '" + sql + "'";
+		if ( queryExecutionMillis > logSlowQuery ) {
+			String logData = "SlowQuery: " + queryExecutionMillis + " milliseconds. SQL: '" + sql + "'";
 			LOG_SLOW.info( logData );
 			if ( logToStdout ) {
 				System.out.println( logData );

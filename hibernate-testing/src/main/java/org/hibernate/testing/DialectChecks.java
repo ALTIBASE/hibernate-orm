@@ -6,6 +6,7 @@
  */
 package org.hibernate.testing;
 
+import org.hibernate.dialect.CockroachDB192Dialect;
 import org.hibernate.dialect.AltibaseDialect;
 import org.hibernate.dialect.DB2Dialect;
 import org.hibernate.dialect.Dialect;
@@ -287,6 +288,7 @@ abstract public class DialectChecks {
 				dialect instanceof PostgreSQL81Dialect ||
 				dialect instanceof SybaseDialect ||
 				dialect instanceof MySQLDialect ||
+				dialect instanceof CockroachDB192Dialect ||
 				dialect instanceof AltibaseDialect
 			);
 		}

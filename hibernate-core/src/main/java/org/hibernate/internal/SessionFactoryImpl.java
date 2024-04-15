@@ -55,6 +55,7 @@ import org.hibernate.cache.spi.CacheImplementor;
 import org.hibernate.cfg.AvailableSettings;
 import org.hibernate.cfg.Environment;
 import org.hibernate.cfg.Settings;
+import org.hibernate.cfg.annotations.HCANNHelper;
 import org.hibernate.context.internal.JTASessionContext;
 import org.hibernate.context.internal.ManagedSessionContext;
 import org.hibernate.context.internal.ThreadLocalSessionContext;
@@ -194,10 +195,12 @@ public class SessionFactoryImpl implements SessionFactoryImplementor {
 	private final transient FastSessionServices fastSessionServices;
 	private final transient SessionBuilder defaultSessionOpenOptions;
 	private final transient SessionBuilder temporarySessionOpenOptions;
+	private final transient StatelessSessionBuilder defaultStatelessOptions;
 
 	public SessionFactoryImpl(
 			final MetadataImplementor metadata,
-			SessionFactoryOptions options) {
+			SessionFactoryOptions options,
+			QueryPlanCache.QueryPlanCreator queryPlanCacheFunction) {
 		LOG.debug( "Building session factory" );
 
 		this.sessionFactoryOptions = options;
@@ -256,7 +259,7 @@ public class SessionFactoryImpl implements SessionFactoryImplementor {
 		LOG.debugf( "Session factory constructed with filter configurations : %s", filters );
 		LOG.debugf( "Instantiating session factory with properties: %s", properties );
 
-		this.queryPlanCache = new QueryPlanCache( this );
+		this.queryPlanCache = new QueryPlanCache( this, queryPlanCacheFunction );
 
 		class IntegratorObserver implements SessionFactoryObserver {
 			private ArrayList<Integrator> integrators = new ArrayList<>();
@@ -292,6 +295,7 @@ public class SessionFactoryImpl implements SessionFactoryImplementor {
 				);
 				identifierGenerators.put( model.getEntityName(), generator );
 			} );
+			metadata.validate();
 
 			LOG.debug( "Instantiated session factory" );
 
@@ -373,8 +377,9 @@ public class SessionFactoryImpl implements SessionFactoryImplementor {
 				fetchProfiles.put( fetchProfile.getName(), fetchProfile );
 			}
 
-			this.defaultSessionOpenOptions = withOptions();
-			this.temporarySessionOpenOptions = buildTemporarySessionOpenOptions();
+			this.defaultSessionOpenOptions = createDefaultSessionOpenOptionsIfPossible();
+			this.temporarySessionOpenOptions = this.defaultSessionOpenOptions == null ? null : buildTemporarySessionOpenOptions();
+			this.defaultStatelessOptions = this.defaultSessionOpenOptions == null ? null : withStatelessOptions();
 			this.fastSessionServices = new FastSessionServices( this );
 
 			this.observer.sessionFactoryCreated( this );
@@ -386,6 +391,10 @@ public class SessionFactoryImpl implements SessionFactoryImplementor {
 					this,
 					serviceRegistry.getService( JndiService.class )
 			);
+
+			//As last operation, delete all caches from ReflectionManager
+			//(not modelled as a listener as we want this to be last)
+			HCANNHelper.resetIfResetMethodExists( metadata.getMetadataBuildingOptions().getReflectionManager() );
 		}
 		catch (Exception e) {
 			for ( Integrator integrator : serviceRegistry.getService( IntegratorService.class ).getIntegrators() ) {
@@ -394,6 +403,17 @@ public class SessionFactoryImpl implements SessionFactoryImplementor {
 			}
 			close();
 			throw e;
+		}
+	}
+
+	private SessionBuilder createDefaultSessionOpenOptionsIfPossible() {
+		final CurrentTenantIdentifierResolver currentTenantIdentifierResolver = getCurrentTenantIdentifierResolver();
+		if ( currentTenantIdentifierResolver == null ) {
+			return withOptions();
+		}
+		else {
+			//Don't store a default SessionBuilder when a CurrentTenantIdentifierResolver is provided
+			return null;
 		}
 	}
 
@@ -444,25 +464,23 @@ public class SessionFactoryImpl implements SessionFactoryImplementor {
 	}
 
 	public Session openSession() throws HibernateException {
-		final CurrentTenantIdentifierResolver currentTenantIdentifierResolver = getCurrentTenantIdentifierResolver();
-		//We can only use reuse the defaultSessionOpenOptions as a constant when there is no TenantIdentifierResolver
-		if ( currentTenantIdentifierResolver != null ) {
-			return this.withOptions().openSession();
+		//The defaultSessionOpenOptions can't be used in some cases; for example when using a TenantIdentifierResolver.
+		if ( this.defaultSessionOpenOptions != null ) {
+			return this.defaultSessionOpenOptions.openSession();
 		}
 		else {
-			return this.defaultSessionOpenOptions.openSession();
+			return this.withOptions().openSession();
 		}
 	}
 
 	public Session openTemporarySession() throws HibernateException {
-		final CurrentTenantIdentifierResolver currentTenantIdentifierResolver = getCurrentTenantIdentifierResolver();
-		//We can only use reuse the defaultSessionOpenOptions as a constant when there is no TenantIdentifierResolver
-		if ( currentTenantIdentifierResolver != null ) {
-			return buildTemporarySessionOpenOptions()
-					.openSession();
+		//The temporarySessionOpenOptions can't be used in some cases; for example when using a TenantIdentifierResolver.
+		if ( this.temporarySessionOpenOptions != null ) {
+			return this.temporarySessionOpenOptions.openSession();
 		}
 		else {
-			return this.temporarySessionOpenOptions.openSession();
+			return buildTemporarySessionOpenOptions()
+					.openSession();
 		}
 	}
 
@@ -484,7 +502,12 @@ public class SessionFactoryImpl implements SessionFactoryImplementor {
 	}
 
 	public StatelessSession openStatelessSession() {
-		return withStatelessOptions().openStatelessSession();
+		if ( this.defaultStatelessOptions != null ) {
+			return this.defaultStatelessOptions.openStatelessSession();
+		}
+		else {
+			return withStatelessOptions().openStatelessSession();
+		}
 	}
 
 	public StatelessSession openStatelessSession(Connection connection) {
@@ -1076,7 +1099,15 @@ public class SessionFactoryImpl implements SessionFactoryImplementor {
 		}
 	}
 
+	/**
+	 * @deprecated use {@link #configuredInterceptor(Interceptor, boolean, SessionFactoryOptions)}
+	 */
+	@Deprecated
 	public static Interceptor configuredInterceptor(Interceptor interceptor, SessionFactoryOptions options) {
+		return configuredInterceptor( interceptor, false, options );
+	}
+
+	public static Interceptor configuredInterceptor(Interceptor interceptor, boolean explicitNoInterceptor, SessionFactoryOptions options) {
 		// NOTE : DO NOT return EmptyInterceptor.INSTANCE from here as a "default for the Session"
 		// 		we "filter" that one out here.  The return from here should represent the
 		//		explicitly configured Interceptor (if one).  Return null from here instead; Session
@@ -1086,10 +1117,16 @@ public class SessionFactoryImpl implements SessionFactoryImplementor {
 			return interceptor;
 		}
 
-		// prefer the SF-scoped interceptor, prefer that to any Session-scoped interceptor prototype
+		// prefer the SessionFactory-scoped interceptor, prefer that to any Session-scoped interceptor prototype
 		final Interceptor optionsInterceptor = options.getInterceptor();
 		if ( optionsInterceptor != null && optionsInterceptor != EmptyInterceptor.INSTANCE ) {
 			return optionsInterceptor;
+		}
+
+		// If explicitly asking for no interceptor and there is no SessionFactory-scoped interceptors, then
+		// no need to inherit from the configured stateless session ones.
+		if ( explicitNoInterceptor ) {
+			return null;
 		}
 
 		// then check the Session-scoped interceptor prototype
@@ -1134,6 +1171,7 @@ public class SessionFactoryImpl implements SessionFactoryImplementor {
 		private String tenantIdentifier;
 		private TimeZone jdbcTimeZone;
 		private boolean queryParametersValidationEnabled;
+		private boolean explicitNoInterceptor;
 
 		// Lazy: defaults can be built by invoking the builder in fastSessionServices.defaultSessionEventListeners
 		// (Need a fresh build for each Session as the listener instances can't be reused across sessions)
@@ -1151,9 +1189,6 @@ public class SessionFactoryImpl implements SessionFactoryImplementor {
 			this.statementInspector = sessionFactoryOptions.getStatementInspector();
 			this.connectionHandlingMode = sessionFactoryOptions.getPhysicalConnectionHandlingMode();
 			this.autoClose = sessionFactoryOptions.isAutoCloseSessionEnabled();
-			this.flushMode = sessionFactoryOptions.isFlushBeforeCompletionEnabled()
-					? FlushMode.AUTO
-					: FlushMode.MANUAL;
 
 			final CurrentTenantIdentifierResolver currentTenantIdentifierResolver = sessionFactory.getCurrentTenantIdentifierResolver();
 			if ( currentTenantIdentifierResolver != null ) {
@@ -1225,7 +1260,7 @@ public class SessionFactoryImpl implements SessionFactoryImplementor {
 
 		@Override
 		public Interceptor getInterceptor() {
-			return configuredInterceptor( interceptor, sessionFactory.getSessionFactoryOptions() );
+			return configuredInterceptor( interceptor, explicitNoInterceptor, sessionFactory.getSessionFactoryOptions() );
 		}
 
 		@Override
@@ -1272,6 +1307,7 @@ public class SessionFactoryImpl implements SessionFactoryImplementor {
 		@SuppressWarnings("unchecked")
 		public T interceptor(Interceptor interceptor) {
 			this.interceptor = interceptor;
+			this.explicitNoInterceptor = false;
 			return (T) this;
 		}
 
@@ -1279,6 +1315,7 @@ public class SessionFactoryImpl implements SessionFactoryImplementor {
 		@SuppressWarnings("unchecked")
 		public T noInterceptor() {
 			this.interceptor = EmptyInterceptor.INSTANCE;
+			this.explicitNoInterceptor = true;
 			return (T) this;
 		}
 
@@ -1300,7 +1337,7 @@ public class SessionFactoryImpl implements SessionFactoryImplementor {
 		@SuppressWarnings("unchecked")
 		public T connectionReleaseMode(ConnectionReleaseMode connectionReleaseMode) {
 			// NOTE : Legacy behavior (when only ConnectionReleaseMode was exposed) was to always acquire a
-			// Connection using ConnectionAcquisitionMode.AS_NEEDED..
+			// Connection using ConnectionAcquisitionMode.AS_NEEDED.
 
 			final PhysicalConnectionHandlingMode handlingMode = PhysicalConnectionHandlingMode.interpret(
 					ConnectionAcquisitionMode.AS_NEEDED,
@@ -1368,7 +1405,7 @@ public class SessionFactoryImpl implements SessionFactoryImplementor {
 		@SuppressWarnings("unchecked")
 		public T clearEventListeners() {
 			if ( listeners == null ) {
-				//Needs to initialize explicitly to an empty list as otherwise "null" immplies the default listeners will be applied
+				//Needs to initialize explicitly to an empty list as otherwise "null" implies the default listeners will be applied
 				this.listeners = new ArrayList<SessionEventListener>( 3 );
 			}
 			else {
@@ -1450,7 +1487,7 @@ public class SessionFactoryImpl implements SessionFactoryImplementor {
 
 		@Override
 		public Interceptor getInterceptor() {
-			return configuredInterceptor( EmptyInterceptor.INSTANCE, sessionFactory.getSessionFactoryOptions() );
+			return configuredInterceptor( EmptyInterceptor.INSTANCE, false, sessionFactory.getSessionFactoryOptions() );
 
 		}
 
@@ -1461,7 +1498,7 @@ public class SessionFactoryImpl implements SessionFactoryImplementor {
 
 		@Override
 		public PhysicalConnectionHandlingMode getPhysicalConnectionHandlingMode() {
-			return null;
+			return sessionFactory.getSessionFactoryOptions().getPhysicalConnectionHandlingMode();
 		}
 
 		@Override
@@ -1647,7 +1684,8 @@ public class SessionFactoryImpl implements SessionFactoryImplementor {
 	/**
 	 * @return the FastSessionServices for this SessionFactory.
 	 */
-	FastSessionServices getFastSessionServices() {
+	@Override
+	public FastSessionServices getFastSessionServices() {
 		return this.fastSessionServices;
 	}
 

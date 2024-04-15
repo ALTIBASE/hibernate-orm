@@ -143,16 +143,17 @@ public class EventListenerRegistryImpl implements EventListenerRegistry, Stoppab
 				// we can have non java class persisted by hibernate
 				continue;
 			}
-			callbackBuilder.buildCallbacksForEntity( persistentClass.getClassName(), callbackRegistry );
+			final Class mappedClass = persistentClass.getMappedClass();
+			callbackBuilder.buildCallbacksForEntity( mappedClass, callbackRegistry );
 
 			for ( Iterator propertyIterator = persistentClass.getDeclaredPropertyIterator();
 					propertyIterator.hasNext(); ) {
 				Property property = (Property) propertyIterator.next();
 
-				if ( property.getType().isComponentType() ) {
+				if ( property.isComposite() ) {
 					callbackBuilder.buildCallbacksForEmbeddable(
 							property,
-							persistentClass.getClassName(),
+							mappedClass,
 							callbackRegistry
 					);
 				}

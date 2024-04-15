@@ -344,12 +344,6 @@ public interface CoreMessageLogger extends BasicLogger {
 	@Message(value = "Found mapping document in jar: %s", id = 109)
 	void foundMappingDocument(String name);
 
-	@LogMessage(level = ERROR)
-	@Message(value = "Getters of lazy classes cannot be final: %s.%s", id = 112)
-	void gettersOfLazyClassesCannotBeFinal(
-			String entityName,
-			String name);
-
 	@LogMessage(level = WARN)
 	@Message(value = "GUID identifier generated: %s", id = 113)
 	void guidGenerated(String result);
@@ -778,12 +772,6 @@ public interface CoreMessageLogger extends BasicLogger {
 	@Message(value = "Sessions opened: %s", id = 242)
 	void sessionsOpened(long sessionOpenCount);
 
-	@LogMessage(level = ERROR)
-	@Message(value = "Setters of lazy classes cannot be final: %s.%s", id = 243)
-	void settersOfLazyClassesCannotBeFinal(
-			String entityName,
-			String name);
-
 	@LogMessage(level = WARN)
 	@Message(value = "@Sort not allowed for an indexed collection, annotation ignored.", id = 244)
 	void sortAnnotationIndexedCollection();
@@ -1162,19 +1150,11 @@ public interface CoreMessageLogger extends BasicLogger {
 
 	@LogMessage(level = WARN)
 	@Message(value = "Could not obtain connection metadata: %s", id = 339)
-	void unableToObjectConnectionMetadata(SQLException error);
+	void unableToObtainConnectionMetadata(SQLException error);
 
 	@LogMessage(level = WARN)
-	@Message(value = "Could not obtain connection to query metadata: %s", id = 340)
-	void unableToObjectConnectionToQueryMetadata(SQLException error);
-
-	@LogMessage(level = WARN)
-	@Message(value = "Could not obtain connection metadata : %s", id = 341)
-	void unableToObtainConnectionMetadata(String message);
-
-	@LogMessage(level = WARN)
-	@Message(value = "Could not obtain connection to query metadata : %s", id = 342)
-	void unableToObtainConnectionToQueryMetadata(String message);
+	@Message(value = "Could not obtain connection to query metadata", id = 342)
+	void unableToObtainConnectionToQueryMetadata(@Cause Exception e);
 
 	@LogMessage(level = ERROR)
 	@Message(value = "Could not obtain initial context", id = 343)
@@ -1850,7 +1830,7 @@ public interface CoreMessageLogger extends BasicLogger {
 	@Message(value = "Using @AttributeOverride or @AttributeOverrides in conjunction with entity inheritance is not supported: %s. The overriding definitions are ignored.", id = 499)
 	void unsupportedAttributeOverrideWithEntityInheritance(String entityName);
 
-	/** 6.0 message loggers
+	/* 6.0 message loggers
 	 @LogMessage(level = WARN)
 	 @Message(value = "The bytecode provider class [%s] could not be loaded", id = 500)
 	 void bytecodeProviderClassNotFound(String className);
@@ -1875,5 +1855,14 @@ public interface CoreMessageLogger extends BasicLogger {
 	@LogMessage(level = WARN)
 	@Message(value = "Ignoring ServiceConfigurationError caught while trying to instantiate service '%s'.", id = 505)
 	void ignoringServiceConfigurationError(Class<?> serviceContract, @Cause ServiceConfigurationError error);
+
+	@LogMessage(level = WARN)
+	@Message(value = "Detaching an uninitialized collection with enabled filters from a session: %s", id = 506)
+	void enabledFiltersWhenDetachFromSession(String collectionInfoString);
+
+	@LogMessage(level = WARN)
+	@Message(value = "The Javassist based BytecodeProvider is deprecated. Please switch to using the ByteBuddy based BytecodeProvider, " +
+			"which is the default since Hibernate ORM 5.3. The Javassist one will be removed soon.", id = 507)
+	void warnUsingJavassistBytecodeProviderIsDeprecated();
 
 }

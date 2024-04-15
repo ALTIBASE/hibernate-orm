@@ -367,7 +367,7 @@ public class Ejb3JoinColumn extends Ejb3Column {
 			}
 
 			final String name;
-			if ( "".equals( colName ) ) {
+			if ( colName != null && colName.isEmpty() ) {
 				name = normalizer.normalizeIdentifierQuotingAsString( defaultName );
 			}
 			else {
@@ -419,7 +419,7 @@ public class Ejb3JoinColumn extends Ejb3Column {
 			PersistentClass persistentClass,
 			Map<String, Join> joins,
 			Map<XClass, InheritanceState> inheritanceStatePerClass) {
-		// TODO shouldn't we deduce the classname from the persistentclasS?
+		// TODO shouldn't we deduce the classname from the persistentClass?
 		this.propertyHolder = PropertyHolderBuilder.buildPropertyHolder(
 				persistentClass,
 				joins,

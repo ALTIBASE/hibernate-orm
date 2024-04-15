@@ -18,11 +18,11 @@ import java.util.HashMap;
 import java.util.HashSet;
 import java.util.IdentityHashMap;
 import java.util.Iterator;
-import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
 import java.util.concurrent.ConcurrentMap;
 import java.util.function.BiConsumer;
+import java.util.function.Consumer;
 import java.util.function.Supplier;
 
 import org.hibernate.AssertionFailure;
@@ -352,7 +352,7 @@ public class StatefulPersistenceContext implements PersistenceContext {
 			return dbValue;
 		}
 		else {
-			// for a mutable natural there is a likelihood that the the information will already be
+			// for a mutable natural id there is a likelihood that the information will already be
 			// snapshot-cached.
 			final int[] props = persister.getNaturalIdentifierProperties();
 			final Object[] entitySnapshot = getDatabaseSnapshot( id, persister );
@@ -530,8 +530,8 @@ public class StatefulPersistenceContext implements PersistenceContext {
 
 			When a virtual method is called via an interface the JVM needs to resolve which concrete
 			implementation to call.  This takes CPU cycles and is a performance penalty.  It also prevents method
-			in-ling which further degrades performance.  Casting to an implementation and making a direct method call
-			removes the virtual call, and allows the methods to be in-lined.  In this critical code path, it has a very
+			inlining which further degrades performance.  Casting to an implementation and making a direct method call
+			removes the virtual call, and allows the methods to be inlined.  In this critical code path, it has a very
 			large impact on performance to make virtual method calls.
 		*/
 		if (persister.getEntityEntryFactory() instanceof MutableEntityEntryFactory) {
@@ -639,7 +639,7 @@ public class StatefulPersistenceContext implements PersistenceContext {
 	private void reassociateProxy(LazyInitializer li, HibernateProxy proxy) {
 		if ( li.getSession() != this.getSession() ) {
 			final EntityPersister persister = session.getFactory().getMetamodel().entityPersister( li.getEntityName() );
-			final EntityKey key = session.generateEntityKey( li.getIdentifier(), persister );
+			final EntityKey key = session.generateEntityKey( li.getInternalIdentifier(), persister );
 		  	// any earlier proxy takes precedence
 			getOrInitializeProxiesByKey().putIfAbsent( key, proxy );
 			proxy.getHibernateLazyInitializer().setSession( session );
@@ -846,7 +846,7 @@ public class StatefulPersistenceContext implements PersistenceContext {
 	@Override
 	public Object getLoadedCollectionOwnerOrNull(PersistentCollection collection) {
 		final CollectionEntry ce = getCollectionEntry( collection );
-		if ( ce.getLoadedPersister() == null ) {
+		if ( ce == null || ce.getLoadedPersister() == null ) {
 			return null;
 		}
 
@@ -984,6 +984,10 @@ public class StatefulPersistenceContext implements PersistenceContext {
 
 	@Override
 	public void initializeNonLazyCollections() throws HibernateException {
+		initializeNonLazyCollections( PersistentCollection::forceInitialization );
+	}
+
+	protected void initializeNonLazyCollections(Consumer<PersistentCollection> initializeAction ) {
 		if ( loadCounter == 0 ) {
 			LOG.trace( "Initializing non-lazy collections" );
 
@@ -994,7 +998,7 @@ public class StatefulPersistenceContext implements PersistenceContext {
 				int size;
 				while ( nonlazyCollections != null && ( size = nonlazyCollections.size() ) > 0 ) {
 					//note that each iteration of the loop may add new elements
-					nonlazyCollections.remove( size - 1 ).forceInitialization();
+					initializeAction.accept( nonlazyCollections.remove( size - 1 ) );
 				}
 			}
 			finally {
@@ -1344,7 +1348,7 @@ public class StatefulPersistenceContext implements PersistenceContext {
 							);
 						}
 						if ( found ) {
-							return proxy.getHibernateLazyInitializer().getIdentifier();
+							return proxy.getHibernateLazyInitializer().getInternalIdentifier();
 						}
 					}
 				}
@@ -1356,7 +1360,7 @@ public class StatefulPersistenceContext implements PersistenceContext {
 
 	private Object getParentsByChild(Object childEntity) {
 		if ( parentsByChild != null ) {
-			parentsByChild.get( childEntity );
+			return parentsByChild.get( childEntity );
 		}
 		return null;
 	}
@@ -1826,7 +1830,7 @@ public class StatefulPersistenceContext implements PersistenceContext {
 
 	// INSERTED KEYS HANDLING ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-	private HashMap<String,List<Serializable>> insertedKeysMap;
+	private HashMap<String, HashSet<Serializable>> insertedKeysMap;
 
 	@Override
 	public void registerInsertedKey(EntityPersister persister, Serializable id) {
@@ -1836,11 +1840,10 @@ public class StatefulPersistenceContext implements PersistenceContext {
 				insertedKeysMap = new HashMap<>();
 			}
 			final String rootEntityName = persister.getRootEntityName();
-			List<Serializable> insertedEntityIds = insertedKeysMap.get( rootEntityName );
-			if ( insertedEntityIds == null ) {
-				insertedEntityIds = new ArrayList<>();
-				insertedKeysMap.put( rootEntityName, insertedEntityIds );
-			}
+			HashSet<Serializable> insertedEntityIds = insertedKeysMap.computeIfAbsent(
+					rootEntityName,
+					k -> new HashSet<>()
+			);
 			insertedEntityIds.add( id );
 		}
 	}
@@ -1850,7 +1853,7 @@ public class StatefulPersistenceContext implements PersistenceContext {
 		// again, we only really care if the entity is cached
 		if ( persister.canWriteToCache() ) {
 			if ( insertedKeysMap != null ) {
-				final List<Serializable> insertedEntityIds = insertedKeysMap.get( persister.getRootEntityName() );
+				final HashSet<Serializable> insertedEntityIds = insertedKeysMap.get( persister.getRootEntityName() );
 				if ( insertedEntityIds != null ) {
 					return insertedEntityIds.contains( id );
 				}
@@ -1954,7 +1957,7 @@ public class StatefulPersistenceContext implements PersistenceContext {
 
 			persister = locateProperPersister( persister );
 
-			// 'justAddedLocally' is meant to handle the case where we would get double stats jounaling
+			// 'justAddedLocally' is meant to handle the case where we would get double stats journaling
 			//	from a single load event.  The first put journal would come from the natural id resolution;
 			// the second comes from the entity loading.  In this condition, we want to avoid the multiple
 			// 'put' stats incrementing.
@@ -2161,7 +2164,7 @@ public class StatefulPersistenceContext implements PersistenceContext {
 
 			// todo : couple of things wrong here:
 			//		1) should be using access strategy, not plain evict..
-			//		2) should prefer session-cached values if any (requires interaction from removeLocalNaturalIdCrossReference
+			//		2) should prefer session-cached values if any (requires interaction from removeLocalNaturalIdCrossReference)
 
 			persister = locateProperPersister( persister );
 			final NaturalIdDataAccess naturalIdCacheAccessStrategy = persister.getNaturalIdCacheAccessStrategy();
