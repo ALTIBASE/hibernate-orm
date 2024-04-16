@@ -22,8 +22,10 @@ import org.hibernate.annotations.FetchMode;
 import org.hibernate.annotations.SortNatural;
 import org.hibernate.annotations.Where;
 
+import org.hibernate.dialect.AltibaseDialect;
 import org.hibernate.testing.DialectChecks;
 import org.hibernate.testing.RequiresDialectFeature;
+import org.hibernate.testing.SkipForDialect;
 import org.hibernate.testing.TestForIssue;
 import org.junit.Test;
 
@@ -35,6 +37,7 @@ import static org.hibernate.testing.transaction.TransactionUtil.doInHibernate;
  */
 @TestForIssue( jiraKey = "HHH-14227" )
 @RequiresDialectFeature(DialectChecks.SupportsJdbcDriverProxying.class)
+@SkipForDialect( value = AltibaseDialect.class, comment = "'TYPE' is not escaped even though autoQuoteKeywords is enabled")
 public class InsertOrderingSelfReferenceTest extends BaseInsertOrderingTest {
 
     @Override

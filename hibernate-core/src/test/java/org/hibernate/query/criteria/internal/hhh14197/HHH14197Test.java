@@ -9,7 +9,9 @@ import javax.persistence.criteria.Subquery;
 
 import org.hibernate.jpa.test.BaseEntityManagerFunctionalTestCase;
 
+import org.hibernate.testing.DialectChecks;
 import org.hibernate.testing.FailureExpected;
+import org.hibernate.testing.RequiresDialectFeature;
 import org.hibernate.testing.TestForIssue;
 import org.junit.Test;
 
@@ -20,6 +22,7 @@ import static org.hibernate.testing.transaction.TransactionUtil.doInJPA;
  * @author Nathan Xu
  */
 @TestForIssue( jiraKey = "HHH-14197" )
+@RequiresDialectFeature(DialectChecks.SupportsIdentityColumns.class)
 public class HHH14197Test extends BaseEntityManagerFunctionalTestCase {
 
 	@Override

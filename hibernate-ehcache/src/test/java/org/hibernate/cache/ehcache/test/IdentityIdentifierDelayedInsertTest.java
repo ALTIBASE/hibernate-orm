@@ -21,6 +21,8 @@ import org.hibernate.annotations.Cache;
 import org.hibernate.annotations.CacheConcurrencyStrategy;
 import org.hibernate.cache.ehcache.internal.SingletonEhcacheRegionFactory;
 import org.hibernate.cfg.AvailableSettings;
+import org.hibernate.testing.DialectChecks;
+import org.hibernate.testing.RequiresDialectFeature;
 import org.junit.Test;
 
 import org.hibernate.testing.TestForIssue;
@@ -31,6 +33,7 @@ import static org.hibernate.testing.transaction.TransactionUtil.doInHibernate;
 /**
  * @author Chris Cranford
  */
+@RequiresDialectFeature(DialectChecks.SupportsIdentityColumns.class)
 public class IdentityIdentifierDelayedInsertTest extends BaseNonConfigCoreFunctionalTestCase {
 	@Override
 	protected void addSettings(Map settings) {

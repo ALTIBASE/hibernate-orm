@@ -14,6 +14,8 @@ import java.sql.Types;
 
 import org.hibernate.dialect.pagination.AltibaseLimitHandler;
 import org.hibernate.dialect.pagination.LimitHandler;
+import org.hibernate.engine.jdbc.env.spi.IdentifierHelper;
+import org.hibernate.engine.jdbc.env.spi.IdentifierHelperBuilder;
 import org.hibernate.exception.ConstraintViolationException;
 import org.hibernate.exception.LockTimeoutException;
 import org.hibernate.exception.spi.SQLExceptionConversionDelegate;
@@ -338,6 +340,17 @@ public class AltibaseDialect extends Dialect {
 	}
 
 	@Override
+	public IdentifierHelper buildIdentifierHelper(
+			IdentifierHelperBuilder builder,
+			DatabaseMetaData dbMetaData) throws SQLException {
+		// Any use of keywords as identifiers will result in syntax error, so enable auto quote always
+		builder.setAutoQuoteKeywords( true );
+		builder.applyReservedWords( dbMetaData );
+
+		return super.buildIdentifierHelper( builder, dbMetaData );
+	}
+
+	@Override
 	public MultiTableBulkIdStrategy getDefaultMultiTableBulkIdStrategy() {
 		return new GlobalTemporaryTableBulkIdStrategy(
 				new IdTableSupportStandardImpl(), AfterUseAction.CLEAN
@@ -372,11 +385,6 @@ public class AltibaseDialect extends Dialect {
 
 	@Override
 	public boolean canCreateSchema() {
-		return false;
-	}
-
-	@Override
-	public boolean supportsColumnCheck() {
 		return false;
 	}
 

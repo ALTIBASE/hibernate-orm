@@ -19,6 +19,8 @@ import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
 
+import java.util.Arrays;
+
 import static org.junit.Assert.assertTrue;
 
 /**
@@ -44,11 +46,12 @@ public class CollectionPkTest extends BaseUnitTestCase {
 	public void testSet() {
 		verifyPkNameUsed(
 				"org/hibernate/test/hbm/collectionpk/person_set.hbm.xml",
-				"primary key (group, name)"
+				"primary key (group, name)",
+				"primary key (\"group\", name)"
 		);
 	}
 
-	private void verifyPkNameUsed(String mappingResource, String expectedName) {
+	private void verifyPkNameUsed(String mappingResource, String... expectedName) {
 		final Metadata metadata = new MetadataSources( ssr )
 				.addResource( mappingResource )
 				.buildMetadata();
@@ -57,8 +60,8 @@ public class CollectionPkTest extends BaseUnitTestCase {
 		new SchemaCreatorImpl( ssr ).doCreation( metadata, false, target );
 
 		assertTrue(
-				"Expected foreign-key name [" + expectedName + "] not seen in schema creation output",
-				target.containedText( expectedName )
+				"Expected foreign-key name [" + Arrays.toString(expectedName) + "] not seen in schema creation output",
+				Arrays.stream( expectedName ).anyMatch( target::containedText )
 		);
 	}
 
@@ -66,8 +69,8 @@ public class CollectionPkTest extends BaseUnitTestCase {
 	public void testMap() {
 		verifyPkNameUsed(
 				"org/hibernate/test/hbm/collectionpk/person_map.hbm.xml",
-				"primary key (group, locale)"
+				"primary key (group, locale)",
+				"primary key (\"group\", locale)"
 		);
 	}
-
 }

@@ -210,7 +210,7 @@ ext {
                         'jdbc.driver': 'Altibase.jdbc.driver.AltibaseDriver',
                         'jdbc.user'  : 'sys',
                         'jdbc.pass'  : 'manager',
-                        'jdbc.url'   : 'jdbc:Altibase://localhost:20300/mydb'
-                ],
+                        'jdbc.url'   : 'jdbc:Altibase://localhost:20300/mydb?lob_null_select=off'
+                ]
         ]
 }

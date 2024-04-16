@@ -20,6 +20,7 @@ import org.hibernate.boot.MetadataSources;
 import org.hibernate.boot.registry.StandardServiceRegistry;
 import org.hibernate.boot.registry.StandardServiceRegistryBuilder;
 import org.hibernate.boot.spi.MetadataImplementor;
+import org.hibernate.dialect.AltibaseDialect;
 import org.hibernate.dialect.DB2Dialect;
 import org.hibernate.testing.SkipForDialect;
 import org.hibernate.testing.junit4.CustomRunner;
@@ -36,6 +37,7 @@ import org.junit.runner.RunWith;
  * @author Gail Badner
  */
 @SkipForDialect(value = DB2Dialect.class, comment = "DB2 is far more resistant to the reserved keyword usage. See HHH-12832.")
+@SkipForDialect(value = AltibaseDialect.class, comment = "Altibase is far more resistant to the reserved keyword usage.")
 @RunWith(CustomRunner.class)
 public class SchemaUpdateHaltOnErrorTest {
 

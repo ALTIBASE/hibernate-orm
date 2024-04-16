@@ -9,9 +9,11 @@ package org.hibernate.envers.test.integration.onetomany.embeddedid;
 import java.util.Arrays;
 import javax.persistence.EntityManager;
 
+import org.hibernate.dialect.AltibaseDialect;
 import org.hibernate.envers.test.BaseEnversJPAFunctionalTestCase;
 import org.hibernate.envers.test.Priority;
 
+import org.hibernate.testing.SkipForDialect;
 import org.hibernate.testing.TestForIssue;
 import org.junit.Assert;
 import org.junit.Test;
@@ -20,6 +22,7 @@ import org.junit.Test;
  * @author Lukasz Antoniak (lukasz dot antoniak at gmail dot com)
  */
 @TestForIssue(jiraKey = "HHH-7157")
+@SkipForDialect(value = AltibaseDialect.class, comment = "'CONSTANT' is not escaped even though autoQuoteKeywords is enabled")
 public class MapsIdTest extends BaseEnversJPAFunctionalTestCase {
 	private PersonTuple tuple1Ver1 = null;
 	private PersonTuple tuple2Ver1 = null;

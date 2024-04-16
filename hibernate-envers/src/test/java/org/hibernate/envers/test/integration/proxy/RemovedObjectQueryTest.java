@@ -14,6 +14,7 @@ import java.util.Set;
 import javax.persistence.EntityManager;
 
 import org.hibernate.Hibernate;
+import org.hibernate.dialect.AltibaseDialect;
 import org.hibernate.envers.RevisionType;
 import org.hibernate.envers.configuration.EnversSettings;
 import org.hibernate.envers.enhanced.SequenceIdRevisionEntity;
@@ -36,6 +37,7 @@ import org.hibernate.envers.test.entities.onetomany.SetRefIngEntity;
 import org.hibernate.envers.test.integration.manytomany.ternary.TernaryMapEntity;
 import org.hibernate.envers.test.tools.TestTools;
 
+import org.hibernate.testing.SkipForDialect;
 import org.hibernate.testing.TestForIssue;
 import org.junit.Assert;
 import org.junit.Test;
@@ -44,6 +46,8 @@ import org.junit.Test;
  * @author Lukasz Antoniak (lukasz dot antoniak at gmail dot com)
  */
 @TestForIssue(jiraKey = "HHH-5845")
+@SkipForDialect(value = AltibaseDialect.class,
+		comment = "__OPTIMIZER_UNNEST_COMPATIBILITY property needs to set 3 to pass this test")
 public class RemovedObjectQueryTest extends BaseEnversJPAFunctionalTestCase {
 	private Integer stringSetId = null;
 	private Integer ternaryMapId = null;

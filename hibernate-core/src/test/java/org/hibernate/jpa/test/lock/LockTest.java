@@ -24,6 +24,7 @@ import javax.persistence.QueryTimeoutException;
 import org.hibernate.LockOptions;
 import org.hibernate.Session;
 import org.hibernate.TransactionException;
+import org.hibernate.dialect.AltibaseDialect;
 import org.hibernate.dialect.CockroachDB192Dialect;
 import org.hibernate.dialect.Dialect;
 import org.hibernate.dialect.HSQLDialect;
@@ -84,6 +85,7 @@ public class LockTest extends BaseEntityManagerFunctionalTestCase {
 	@RequiresDialectFeature( value = DialectChecks.SupportsLockTimeouts.class, 
 		                    comment = "Test verifies proper exception throwing when a lock timeout is specified.",
                               jiraKey = "HHH-7252" )
+	@SkipForDialect(value = AltibaseDialect.class, comment = "Altibase close socket after lock timeout occurred")
 	public void testFindWithPessimisticWriteLockTimeoutException() {
 		Lock lock = new Lock();
 		lock.setName( "name" );
@@ -131,6 +133,7 @@ public class LockTest extends BaseEntityManagerFunctionalTestCase {
 	@RequiresDialectFeature( value = DialectChecks.SupportsLockTimeouts.class,
 			comment = "Test verifies proper exception throwing when a lock timeout is specified for Query#getSingleResult.",
 			jiraKey = "HHH-13364" )
+	@SkipForDialect(value = AltibaseDialect.class, comment = "Altibase close socket after lock timeout occurred")
 	public void testQuerySingleResultPessimisticWriteLockTimeoutException() {
 		Lock lock = new Lock();
 		lock.setName( "name" );
@@ -175,6 +178,7 @@ public class LockTest extends BaseEntityManagerFunctionalTestCase {
 	@RequiresDialectFeature( value = DialectChecks.SupportsLockTimeouts.class,
 			comment = "Test verifies proper exception throwing when a lock timeout is specified for Query#getResultList.",
 			jiraKey = "HHH-13364" )
+	@SkipForDialect(value = AltibaseDialect.class, comment = "Altibase close socket after lock timeout occurred")
 	public void testQueryResultListPessimisticWriteLockTimeoutException() {
 		Lock lock = new Lock();
 		lock.setName( "name" );
@@ -222,6 +226,7 @@ public class LockTest extends BaseEntityManagerFunctionalTestCase {
 	@RequiresDialectFeature( value = DialectChecks.SupportsLockTimeouts.class,
 			comment = "Test verifies proper exception throwing when a lock timeout is specified for NamedQuery#getResultList.",
 			jiraKey = "HHH-13364" )
+	@SkipForDialect(value = AltibaseDialect.class, comment = "Altibase close socket after lock timeout occurred")
 	public void testNamedQueryResultListPessimisticWriteLockTimeoutException() {
 		Lock lock = new Lock();
 		lock.setName( "name" );

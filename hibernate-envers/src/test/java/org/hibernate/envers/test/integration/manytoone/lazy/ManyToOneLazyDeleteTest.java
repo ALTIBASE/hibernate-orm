@@ -10,6 +10,8 @@ import org.hibernate.Hibernate;
 import org.hibernate.envers.configuration.EnversSettings;
 import org.hibernate.envers.test.BaseEnversFunctionalTestCase;
 import org.hibernate.envers.test.Priority;
+import org.hibernate.testing.DialectChecks;
+import org.hibernate.testing.RequiresDialectFeature;
 import org.hibernate.testing.TestForIssue;
 import org.junit.Test;
 
@@ -29,6 +31,7 @@ import static org.junit.Assert.assertEquals;
  * @author Luke Chen
  */
 @TestForIssue(jiraKey = "HHH-13945")
+@RequiresDialectFeature(DialectChecks.SupportsIdentityColumns.class)
 public class ManyToOneLazyDeleteTest extends BaseEnversFunctionalTestCase {
     private Long shipmentId;
     private User user;

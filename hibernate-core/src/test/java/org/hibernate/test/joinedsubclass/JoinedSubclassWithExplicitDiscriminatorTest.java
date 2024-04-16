@@ -16,10 +16,12 @@ import javax.persistence.InheritanceType;
 import javax.persistence.Table;
 
 import org.hibernate.Session;
+import org.hibernate.dialect.AltibaseDialect;
 import org.hibernate.persister.entity.EntityPersister;
 import org.hibernate.persister.entity.JoinedSubclassEntityPersister;
 import org.hibernate.persister.entity.Loadable;
 
+import org.hibernate.testing.SkipForDialect;
 import org.hibernate.testing.TestForIssue;
 import org.hibernate.testing.junit4.BaseCoreFunctionalTestCase;
 import org.hibernate.testing.junit4.ExtraAssertions;
@@ -81,6 +83,7 @@ public class JoinedSubclassWithExplicitDiscriminatorTest extends BaseCoreFunctio
 	}
 
 	@Test
+	@SkipForDialect( value = AltibaseDialect.class, comment = "'TYPE' is not escaped even though autoQuoteKeywords is enabled")
 	public void metadataAssertions() {
 		EntityPersister p = sessionFactory().getEntityPersister( Dog.class.getName() );
 		assertNotNull( p );

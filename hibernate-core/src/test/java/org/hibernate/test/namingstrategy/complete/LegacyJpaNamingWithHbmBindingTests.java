@@ -16,6 +16,9 @@ import org.hibernate.mapping.Selectable;
 
 import org.hibernate.testing.TestForIssue;
 
+import static org.hamcrest.CoreMatchers.anyOf;
+import static org.hamcrest.CoreMatchers.equalTo;
+import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hibernate.testing.junit4.ExtraAssertions.assertTyping;
 import static org.junit.Assert.assertEquals;
 
@@ -74,7 +77,7 @@ public class LegacyJpaNamingWithHbmBindingTests extends BaseHbmBindingTests {
 
 	@Override
 	protected void validateOrderPrimaryTableName(String name) {
-		assertEquals( "Order", name );
+		assertThat( name, anyOf( equalTo( "Order"), equalTo( "`Order`") ) );
 	}
 
 	@Override
@@ -174,7 +177,7 @@ public class LegacyJpaNamingWithHbmBindingTests extends BaseHbmBindingTests {
 
 	@Override
 	protected void validateCustomerOrdersTableName(String name) {
-		assertEquals( "Order", name );
+		assertThat( name, anyOf( equalTo( "Order"), equalTo( "`Order`") ) );
 	}
 
 	@Override

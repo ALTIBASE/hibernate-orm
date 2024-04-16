@@ -36,6 +36,8 @@ import org.hibernate.bytecode.enhance.spi.interceptor.BytecodeLazyAttributeInter
 import org.hibernate.cfg.Configuration;
 import org.hibernate.engine.spi.PersistentAttributeInterceptable;
 
+import org.hibernate.testing.DialectChecks;
+import org.hibernate.testing.RequiresDialectFeature;
 import org.hibernate.testing.TestForIssue;
 import org.hibernate.testing.bytecode.enhancement.BytecodeEnhancerRunner;
 import org.hibernate.testing.junit4.BaseCoreFunctionalTestCase;
@@ -54,6 +56,7 @@ import static org.junit.Assert.assertTrue;
  */
 @TestForIssue(jiraKey = "HHH-14360")
 @RunWith(BytecodeEnhancerRunner.class)
+@RequiresDialectFeature(DialectChecks.SupportsIdentityColumns.class)
 public class DirtyTrackingPersistTest extends BaseCoreFunctionalTestCase {
 
 	@Override

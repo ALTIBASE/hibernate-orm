@@ -49,14 +49,11 @@ import org.hibernate.mapping.Property;
 import org.hibernate.mapping.RootClass;
 import org.hibernate.mapping.SimpleValue;
 import org.hibernate.resource.transaction.spi.TransactionCoordinator;
+import org.hibernate.testing.*;
 import org.hibernate.type.BlobType;
 import org.hibernate.type.ClobType;
 import org.hibernate.type.NClobType;
 
-import org.hibernate.testing.AfterClassOnce;
-import org.hibernate.testing.BeforeClassOnce;
-import org.hibernate.testing.OnExpectedFailure;
-import org.hibernate.testing.OnFailure;
 import org.hibernate.testing.cache.CachingRegionFactory;
 import org.hibernate.testing.transaction.TransactionUtil2;
 import org.junit.After;
@@ -73,6 +70,7 @@ import static org.junit.Assert.fail;
  *
  * @author Steve Ebersole
  */
+@RequiresDialectFeature(DialectChecks.SupportsIdentityColumns.class)
 public class BaseNonConfigCoreFunctionalTestCase extends BaseUnitTestCase {
 	public static final String VALIDATE_DATA_CLEANUP = "hibernate.test.validateDataCleanup";
 

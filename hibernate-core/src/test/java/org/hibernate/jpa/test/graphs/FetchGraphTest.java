@@ -20,6 +20,8 @@ import org.hibernate.graph.GraphParser;
 import org.hibernate.graph.GraphSemantic;
 import org.hibernate.jpa.test.BaseEntityManagerFunctionalTestCase;
 
+import org.hibernate.testing.DialectChecks;
+import org.hibernate.testing.RequiresDialectFeature;
 import org.hibernate.testing.TestForIssue;
 import org.junit.Before;
 import org.junit.Test;
@@ -36,6 +38,7 @@ import static org.junit.Assert.assertTrue;
  * @author Nathan Xu
  */
 @TestForIssue( jiraKey = "HHH-14212" )
+@RequiresDialectFeature(DialectChecks.SupportsIdentityColumns.class)
 public class FetchGraphTest extends BaseEntityManagerFunctionalTestCase {
 
 	@Override

@@ -15,6 +15,7 @@ import javax.persistence.Entity;
 import javax.persistence.Id;
 
 import org.hibernate.cfg.AvailableSettings;
+import org.hibernate.dialect.AltibaseDialect;
 import org.hibernate.dialect.DB2Dialect;
 import org.hibernate.jpa.test.BaseEntityManagerFunctionalTestCase;
 import org.hibernate.testing.SkipForDialect;
@@ -25,6 +26,7 @@ import org.junit.Test;
  * @author Vlad Mihalcea
  */
 @SkipForDialect(value = DB2Dialect.class, comment = "DB2 is far more resistant to the reserved keyword usage. See HHH-12832.")
+@SkipForDialect(value = AltibaseDialect.class, comment = "AltibaseDialect has autoQuoteKeywords enabled, so it is far more resistant to the reserved keyword usage.")
 public class SchemaMigratorHaltOnErrorTest extends BaseEntityManagerFunctionalTestCase {
 
 	@Override
