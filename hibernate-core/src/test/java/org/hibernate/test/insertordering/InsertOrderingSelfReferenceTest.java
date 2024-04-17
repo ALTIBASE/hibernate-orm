@@ -25,6 +25,7 @@ import org.hibernate.annotations.Where;
 import org.hibernate.dialect.AltibaseDialect;
 import org.hibernate.testing.DialectChecks;
 import org.hibernate.testing.RequiresDialectFeature;
+import org.hibernate.testing.SkipForDialect;
 import org.hibernate.testing.TestForIssue;
 import org.junit.Test;
 

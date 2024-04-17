@@ -4670,19 +4670,6 @@ public abstract class AbstractEntityPersister
 		}
 	}
 
-	private UniqueEntityLoader getLoaderByString(String internalFetchProfile) {
-		if ( "merge".equals( internalFetchProfile ) ) {
-			return loaders.getOrCreateByInternalFetchProfileMerge( this::buildMergeCascadeEntityLoader );
-		}
-		else if ( "refresh".equals( internalFetchProfile ) ) {
-			return loaders.getOrCreateByInternalFetchProfileRefresh( this::buildRefreshCascadeEntityLoader );
-		}
-		else {
-			//At this time there's no code storing any other fetch profiles; also, the map implementation isn't supporting the option.
-			return null;
-		}
-	}
-
 	public final boolean isAllNull(Object[] array, int tableNumber) {
 		for ( int i = 0; i < array.length; i++ ) {
 			if ( isPropertyOfTable( i, tableNumber ) && array[i] != null ) {

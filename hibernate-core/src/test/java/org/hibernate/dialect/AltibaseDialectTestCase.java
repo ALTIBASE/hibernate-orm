@@ -50,7 +50,7 @@ public class AltibaseDialectTestCase extends BaseUnitTestCase {
 	public void testSelectWithNoLimit() {
 		assertEquals( "select c1, c2 from t1 order by c1, c2 desc",
 				dialect.getLimitHandler().processSql("select c1, c2 from t1 order by c1, c2 desc",
-						null ).toLowerCase(Locale.ROOT));
+  						 (RowSelection)null ).toLowerCase(Locale.ROOT));
 	}
 
 	@Test

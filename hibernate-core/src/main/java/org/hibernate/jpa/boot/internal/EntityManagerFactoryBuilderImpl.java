@@ -313,13 +313,6 @@ public class EntityManagerFactoryBuilderImpl implements EntityManagerFactoryBuil
 		return StandardServiceRegistryBuilder.forJpa( bsr );
 	}
 
-	/**
-	 * Extension point for subclasses. Used by Hibernate Reactive
-	 */
-	protected StandardServiceRegistryBuilder getStandardServiceRegistryBuilder(BootstrapServiceRegistry bsr) {
-		return StandardServiceRegistryBuilder.forJpa( bsr );
-	}
-
 	private void applyMetadataBuilderContributor() {
 
 		Object metadataBuilderContributorSetting = configurationValues.get( METADATA_BUILDER_CONTRIBUTOR );
