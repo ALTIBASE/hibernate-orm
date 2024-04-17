@@ -22,7 +22,6 @@ import javax.persistence.OneToMany;
 import org.hibernate.Hibernate;
 import org.hibernate.boot.SessionFactoryBuilder;
 
-import org.hibernate.dialect.AltibaseDialect;
 import org.hibernate.testing.TestForIssue;
 import org.hibernate.testing.jdbc.SQLStatementInterceptor;
 import org.hibernate.testing.junit4.BaseNonConfigCoreFunctionalTestCase;
@@ -247,9 +246,7 @@ public class ManyToManySizeTest2 extends BaseNonConfigCoreFunctionalTestCase {
 					Student.class
 			).getResultList();
 			assertEquals( 0, students.size() );
-			if (!(getDialect() instanceof AltibaseDialect)) { // Altibase doesn't have join in sql
-				assertEquals(countNumberOfJoins(sqlStatementInterceptor.getSqlQueries().get(0)), 1);
-			}
+			assertEquals( countNumberOfJoins( sqlStatementInterceptor.getSqlQueries().get( 0 ) ), 1 );
 
 			students = em.createQuery(
 					"select student from Student student where size(student.teacher.skills) > 1",
@@ -560,6 +557,7 @@ public class ManyToManySizeTest2 extends BaseNonConfigCoreFunctionalTestCase {
 	}
 
 	private static int countNumberOfJoins(String query) {
-		return query.toLowerCase( Locale.ROOT ).split( " join ", -1 ).length - 1;
+		String fromPart = query.toLowerCase( Locale.ROOT ).split( " from " )[1].split( " where " )[0];
+		return fromPart.split( "(\\sjoin\\s|,\\s)", -1 ).length - 1;
 	}
 }

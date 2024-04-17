@@ -65,7 +65,6 @@ import org.hibernate.tuple.entity.EntityTuplizer;
 import org.hibernate.tuple.entity.EntityTuplizerFactory;
 
 import static org.hibernate.cfg.AvailableSettings.ACQUIRE_CONNECTIONS;
-import static org.hibernate.cfg.AvailableSettings.ALLOW_ENHANCEMENT_AS_PROXY;
 import static org.hibernate.cfg.AvailableSettings.ALLOW_JTA_TRANSACTION_ACCESS;
 import static org.hibernate.cfg.AvailableSettings.ALLOW_REFRESH_DETACHED_ENTITY;
 import static org.hibernate.cfg.AvailableSettings.ALLOW_UPDATE_OUTSIDE_TRANSACTION;
@@ -197,7 +196,6 @@ public class SessionFactoryOptionsBuilder implements SessionFactoryOptions {
 	private boolean orderUpdatesEnabled;
 	private boolean orderInsertsEnabled;
 	private boolean postInsertIdentifierDelayed;
-	private boolean enhancementAsProxyEnabled;
 	private boolean collectionsInDefaultFetchGroupEnabled;
 
 	// JPA callbacks
@@ -274,8 +272,14 @@ public class SessionFactoryOptionsBuilder implements SessionFactoryOptions {
 			( (ConfigurationServiceImpl) cfgService ).injectServices( (ServiceRegistryImplementor) serviceRegistry );
 		}
 
-		this.beanManagerReference = configurationSettings.get( "javax.persistence.bean.manager" );
-		this.validatorFactoryReference = configurationSettings.get( "javax.persistence.validation.factory" );
+		this.beanManagerReference = configurationSettings.getOrDefault(
+				AvailableSettings.CDI_BEAN_MANAGER,
+				configurationSettings.get( AvailableSettings.JAKARTA_CDI_BEAN_MANAGER )
+		);
+		this.validatorFactoryReference = configurationSettings.getOrDefault(
+				AvailableSettings.JPA_VALIDATION_FACTORY,
+				configurationSettings.get( AvailableSettings.JAKARTA_JPA_VALIDATION_FACTORY )
+		);
 
 		this.sessionFactoryName = (String) configurationSettings.get( SESSION_FACTORY_NAME );
 		this.sessionFactoryNameAlsoJndiName = cfgService.getSetting(
@@ -351,7 +355,6 @@ public class SessionFactoryOptionsBuilder implements SessionFactoryOptions {
 		this.defaultNullPrecedence = NullPrecedence.parse( defaultNullPrecedence );
 		this.orderUpdatesEnabled = ConfigurationHelper.getBoolean( ORDER_UPDATES, configurationSettings );
 		this.orderInsertsEnabled = ConfigurationHelper.getBoolean( ORDER_INSERTS, configurationSettings );
-		this.enhancementAsProxyEnabled = ConfigurationHelper.getBoolean( ALLOW_ENHANCEMENT_AS_PROXY, configurationSettings );
 
 		this.callbacksEnabled = ConfigurationHelper.getBoolean( JPA_CALLBACKS_ENABLED, configurationSettings, true );
 
@@ -1064,11 +1067,6 @@ public class SessionFactoryOptionsBuilder implements SessionFactoryOptions {
 	}
 
 	@Override
-	public boolean isEnhancementAsProxyEnabled() {
-		return enhancementAsProxyEnabled;
-	}
-
-	@Override
 	public boolean isCollectionsInDefaultFetchGroupEnabled() {
 		return collectionsInDefaultFetchGroupEnabled;
 	}
@@ -1275,6 +1273,7 @@ public class SessionFactoryOptionsBuilder implements SessionFactoryOptions {
 		this.scrollableResultSetsEnabled = enabled;
 	}
 
+	@Deprecated
 	public void enableResultSetWrappingSupport(boolean enabled) {
 		this.wrapResultSetsEnabled = enabled;
 	}

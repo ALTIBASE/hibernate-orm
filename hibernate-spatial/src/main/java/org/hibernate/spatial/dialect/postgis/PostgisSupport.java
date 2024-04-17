@@ -7,6 +7,7 @@
 package org.hibernate.spatial.dialect.postgis;
 
 import java.io.Serializable;
+import java.sql.Types;
 
 import org.hibernate.boot.model.TypeContributions;
 import org.hibernate.service.ServiceRegistry;
@@ -51,8 +52,13 @@ public class PostgisSupport implements SpatialDialect, Serializable {
 		contributeTypes( typeContributions, serviceRegistry, PGGeometryTypeDescriptor.INSTANCE_WKB_2 );
 	}
 
+
 	public SpatialFunctionsRegistry functionsToRegister() {
 		return postgisFunctions;
+	}
+
+	public boolean isSpatial(int typeCode) {
+		return typeCode == Types.OTHER || typeCode == PGGeometryTypeDescriptor.INSTANCE_WKB_2.getSqlType();
 	}
 
 	/**

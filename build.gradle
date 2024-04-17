@@ -43,15 +43,13 @@ ext {
 		ormVersion = new HibernateVersion( project.releaseVersion, project )
 	}
 	jpaVersion = new JpaVersion('2.2')
+	jakartaJpaVersion = new JpaVersion('3.0.0')
 }
 
 // The Gradle Nexus Publish Plugin must be applied to the root project and requires group and version
 
 group = 'org.hibernate'
 version = project.ormVersion.fullName
-
-
-logger.lifecycle "Publishing groupId: '" + project.group + "', version: '" + project.version + "'"
 
 nexusPublishing {
 	repositories {
@@ -95,8 +93,8 @@ task release {
 		def javaVersionsInUse = [gradle.ext.javaVersions.main.compiler, gradle.ext.javaVersions.main.release,
 								 gradle.ext.javaVersions.test.compiler, gradle.ext.javaVersions.test.release,
 								 gradle.ext.javaVersions.test.launcher].toSet()
-		// Force to release with JDK 8. Releasing with JDK 11 is not supported yet:
-	// - the hibernate-orm-modules tests do not run due to an issue with the ASM version currently used by Gradle
+		// Force to release with JDK 8. It used to not work on JDK11 because of the hibernate-orm-modules module,
+		// but this limitation might be resolved now that this module has been deleted?
 		if ( javaVersionsInUse != [JavaLanguageVersion.of( 8 )].toSet() ) {
 			throw new IllegalStateException( "Please use JDK 8 to perform the release. Currently using: ${javaVersionsInUse}" )
 		}

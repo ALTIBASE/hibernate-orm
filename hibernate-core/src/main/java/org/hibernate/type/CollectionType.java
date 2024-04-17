@@ -576,7 +576,6 @@ public abstract class CollectionType extends AbstractType implements Association
 			Object owner,
 			Map copyCache,
 			SharedSessionContractImplementor session) {
-		// TODO: does not work for EntityMode.DOM4J yet!
 		java.util.Collection result = ( java.util.Collection ) target;
 		result.clear();
 
@@ -742,7 +741,8 @@ public abstract class CollectionType extends AbstractType implements Association
 		// need to put the merged elements in a new collection
 		Object result = ( target == null ||
 				target == original ||
-				target == LazyPropertyInitializer.UNFETCHED_PROPERTY ) ?
+				target == LazyPropertyInitializer.UNFETCHED_PROPERTY ||
+				target instanceof PersistentCollection && ( (PersistentCollection) target ).isWrapper( original ) ) ?
 				instantiateResult( original ) : target;
 
 		//for arrays, replaceElements() may return a different reference, since

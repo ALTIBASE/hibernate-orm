@@ -16,6 +16,9 @@ dependencies {
         exclude group: "org.javassist", module: "javassist"
     }
 
+    // TODO HHH-13703: get rid of this dependency
+    compile( libraries.dom4j )
+
     provided( libraries.ant )
     annotationProcessor( project( ':hibernate-jpamodelgen' ) )
 
@@ -35,6 +38,12 @@ sourceSets {
         resources {
             srcDir enversDemoResourcesDir
         }
+    }
+}
+
+configurations {
+    tests {
+        description = 'Configuration for the produced test jar'
     }
 }
 
@@ -60,6 +69,20 @@ jar {
                 ].join( ',' )
         )
     }
+}
+
+sourcesJar {
+    duplicatesStrategy = DuplicatesStrategy.EXCLUDE
+}
+
+task testJar(type: Jar, dependsOn: testClasses) {
+    duplicatesStrategy = DuplicatesStrategy.EXCLUDE
+    archiveClassifier.set( 'test' )
+    from sourceSets.test.output
+}
+
+artifacts {
+    tests testJar
 }
 
 tasks."matrix_mariadb" {

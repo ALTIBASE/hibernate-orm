@@ -8,7 +8,7 @@ In a relational database, locking refers to actions taken to prevent data from c
 Your locking strategy can be either optimistic or pessimistic.
 
 Optimistic::
-http://en.wikipedia.org/wiki/Optimistic_locking[Optimistic locking] assumes that multiple transactions can complete without affecting each other,
+https://en.wikipedia.org/wiki/Optimistic_locking[Optimistic locking] assumes that multiple transactions can complete without affecting each other,
 and that therefore transactions can proceed without locking the data resources that they affect.
 Before committing, each transaction verifies that no other transaction has modified its data.
 If the check reveals conflicting modifications, the committing transaction rolls back.
@@ -312,7 +312,7 @@ Hibernate always uses the locking mechanism of the database, and never lock obje
 === `LockMode` and `LockModeType`
 
 Long before JPA 1.0, Hibernate already defined various explicit locking strategies through its `LockMode` enumeration.
-JPA comes with its own https://javaee.github.io/javaee-spec/javadocs/javax/persistence/LockModeType.html[`LockModeType`] enumeration which defines similar strategies as the Hibernate-native `LockMode`.
+JPA comes with its own {jpaJavadocUrlPrefix}LockModeType.html[`LockModeType`] enumeration which defines similar strategies as the Hibernate-native `LockMode`.
 
 [cols=",,",, options="header"]
 |=======================================================================
@@ -351,7 +351,7 @@ This ensures that applications are portable.
 JPA 2.0 introduced two query hints:
 
 javax.persistence.lock.timeout:: it gives the number of milliseconds a lock acquisition request will wait before throwing an exception
-javax.persistence.lock.scope:: defines the https://javaee.github.io/javaee-spec/javadocs/javax/persistence/PessimisticLockScope.html[_scope_] of the lock acquisition request.
+javax.persistence.lock.scope:: defines the {jpaJavadocUrlPrefix}PessimisticLockScope.html[_scope_] of the lock acquisition request.
 The scope can either be `NORMAL` (default value) or `EXTENDED`. The `EXTENDED` scope will cause a lock acquisition request to be passed to other owned table structured (e.g. `@Inheritance(strategy=InheritanceType.JOINED)`, `@ElementCollection`)
 
 [[locking-jpa-query-hints-timeout-example]]

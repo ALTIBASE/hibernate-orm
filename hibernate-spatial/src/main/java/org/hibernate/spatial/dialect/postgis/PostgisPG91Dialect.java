@@ -48,6 +48,12 @@ public class PostgisPG91Dialect extends PostgreSQL91Dialect implements SpatialDi
 		support.contributeTypes( typeContributions, serviceRegistry, PGGeometryTypeDescriptor.INSTANCE_WKB_1 );
 	}
 
+	@Override
+	public boolean equivalentTypes(int typeCode1, int typeCode2) {
+		return super.equivalentTypes( typeCode1, typeCode2 ) ||
+				( support.isSpatial( typeCode1 ) && support.isSpatial( typeCode2 ) );
+	}
+
 	/**
 	 * Returns the SQL fragment for the SQL WHERE-clause when parsing
 	 * <code>org.hibernatespatial.criterion.SpatialRelateExpression</code>s

@@ -9,7 +9,7 @@
 // use.  In that respect it serves a role similar to <dependencyManagement> in Maven
 ext {
 
-    junitVersion = '4.12'
+    junitVersion = '4.13.2'
     h2Version = '1.4.197'
     bytemanVersion = '4.0.16' //Compatible with JDK 17
     jnpVersion = '5.0.6.CR1'
@@ -18,9 +18,11 @@ ext {
     hibernateValidatorVersion = '6.1.6.Final'
     validationApiVersion = '2.0.1.Final'
     elVersion = '3.0.1-b09'
+    hibernateValidatorJakartaVersion = '7.0.1.Final'
 
     cdiVersion = '2.0'
     weldVersion = '3.1.5.Final'
+    jakartaWeldVersion = '4.0.1.SP1'
 
     javassistVersion = '3.27.0-GA'
     byteBuddyVersion = '1.11.12'
@@ -31,12 +33,8 @@ ext {
 
     geolatteVersion = '1.8.2'
 
-    // Wildfly version targeted by module ZIP; Arquillian/Shrinkwrap versions used for CDI testing and testing the module ZIP
-    wildflyVersion = '17.0.1.Final'
-    arquillianVersion = '1.4.1.Final'
     shrinkwrapVersion = '1.2.6'
     shrinkwrapDescriptorsVersion = '2.0.0'
-    wildflyArquillianContainerVersion = '2.2.0.Final'
 
     jodaTimeVersion = '2.3'
 
@@ -44,6 +42,7 @@ ext {
     // We can't upgrade JAXB in Karaf (yet), but fortunately everything works fine with the version built in Karaf
     jaxbApiVersionOsgiRange = "[2.2,3)"
     jaxbRuntimeVersion = '2.3.1'
+    jakartaJaxbRuntimeVersion = '3.0.0'
 
     //GraalVM
     graalvmVersion = '19.3.1'
@@ -80,8 +79,20 @@ ext {
             // required by JAXB from JDK 9 as it is not available anymore in JDK 9
             activation:     'javax.activation:javax.activation-api:1.2.0',
 
+            // jakarta
+            jakarta_jpa:            "jakarta.persistence:jakarta.persistence-api:${project.jakartaJpaVersion}",
+            jakarta_jta:            'jakarta.transaction:jakarta.transaction-api:2.0.0',
+            jakarta_validation:     'jakarta.validation:jakarta.validation-api:3.0.0',
+            jakarta_jacc:           'jakarta.authorization:jakarta.authorization-api:2.0.0',
+            jakarta_interceptor:    'jakarta.interceptor:jakarta.interceptor-api:2.0.0',
+            jakarta_activation:     'jakarta.activation:jakarta.activation-api:2.0.1',
+            jakarta_resource:       'jakarta.resource:jakarta.resource-api:2.0.0',
+            jakarta_jaxb_api:       'jakarta.xml.bind:jakarta.xml.bind-api:3.0.1',
+            jakarta_jaxb_runtime:   "org.glassfish.jaxb:jaxb-runtime:${jakartaJaxbRuntimeVersion}",
+            jakarta_cdi:            'jakarta.enterprise:jakarta.enterprise.cdi-api:3.0.0',
+
             // logging
-            logging:        'org.jboss.logging:jboss-logging:3.4.1.Final',
+            logging:        'org.jboss.logging:jboss-logging:3.4.2.Final',
             logging_annotations: 'org.jboss.logging:jboss-logging-annotations:2.1.0.Final',
             logging_processor:  'org.jboss.logging:jboss-logging-processor:2.1.0.Final',
 
@@ -102,7 +113,7 @@ ext {
             java16_signature:   'org.codehaus.mojo.signature:java16:1.0@signature',
 
             //Maven plugin framework
-            maven_core: 'org.apache.maven:maven-core:3.0.5',
+            maven_core: 'org.apache.maven:maven-core:3.8.1',
             maven_artifact: 'org.apache.maven:maven-artifact:3.0.5',
             maven_plugin: 'org.apache.maven:maven-plugin-api:3.0.5',
             maven_plugin_tools: 'org.apache.maven.plugin-tools:maven-plugin-annotations:3.2',
@@ -116,7 +127,7 @@ ext {
             byteman_bmunit:  "org.jboss.byteman:byteman-bmunit:${bytemanVersion}",
             h2:              "com.h2database:h2:${h2Version}",
             hsqldb:          "org.hsqldb:hsqldb:2.3.2",
-            derby:           "org.apache.derby:derby:10.11.1.1",
+            derby:           "org.apache.derby:derby:10.14.2.0",
             postgresql:      'org.postgresql:postgresql:42.2.16',
             mysql:           'mysql:mysql-connector-java:8.0.17',
             mariadb:         'org.mariadb.jdbc:mariadb-java-client:2.2.3',
@@ -124,13 +135,16 @@ ext {
 
             oracle:          'com.oracle.database.jdbc:ojdbc8:21.1.0.0',
             mssql:           'com.microsoft.sqlserver:mssql-jdbc:7.2.1.jre8',
-            db2:             'com.ibm.db2:db2jcc:10.5',
+            db2:             'com.ibm.db2:jcc:11.5.4.0',
             hana:            'com.sap.cloud.db.jdbc:ngdbc:2.4.59',
 
             jodaTime:        "joda-time:joda-time:${jodaTimeVersion}",
 
             informix:        'com.ibm.informix:jdbc:4.10.12',
-            jboss_jta:       "org.jboss.jbossts:jbossjta:4.16.4.Final",
+            jboss_jta:       "org.jboss.narayana.jta:narayana-jta:5.11.2.Final",
+            jboss_tx_spi:    "org.jboss:jboss-transaction-spi:7.6.1.Final",
+            jboss_jta_jakarta:       "org.jboss.narayana.jta:narayana-jta-jakarta:5.11.2.Final",
+            jboss_tx_spi_jakarta:    "org.jboss:jboss-transaction-spi-jakarta:7.6.1.Final",
             xapool:          "com.experlog:xapool:1.5.0",
             mockito:         'org.mockito:mockito-core:2.19.1',
             mockito_inline:  'org.mockito:mockito-inline:2.19.1',
@@ -138,6 +152,10 @@ ext {
             validator:       "org.hibernate.validator:hibernate-validator:${hibernateValidatorVersion}",
             // EL required by Hibernate Validator at test runtime
             expression_language: "org.glassfish:javax.el:${elVersion}",
+
+            jakarta_validator:"org.hibernate.validator:hibernate-validator:${hibernateValidatorJakartaVersion}",
+            // EL required by Hibernate Validator at test runtime
+            jakarta_el:       'org.glassfish:jakarta.el:4.0.1',
 
             c3p0:            "com.mchange:c3p0:0.9.5.5",
             ehcache:         "net.sf.ehcache:ehcache:2.10.6",
@@ -155,23 +173,21 @@ ext {
 
             cdi: "javax.enterprise:cdi-api:${cdiVersion}",
             weld: "org.jboss.weld.se:weld-se-shaded:${weldVersion}",
+            jakarta_weld: "org.jboss.weld.se:weld-se-shaded:${jakartaWeldVersion}",
 
             assertj: "org.assertj:assertj-core:${assertjVersion}",
 
-            // Arquillian/Shrinkwrap
-            arquillian_junit_container: "org.jboss.arquillian.junit:arquillian-junit-container:${arquillianVersion}",
-            arquillian_protocol_servlet: "org.jboss.arquillian.protocol:arquillian-protocol-servlet:${arquillianVersion}",
-
+            // Shrinkwrap
             shrinkwrap_api: "org.jboss.shrinkwrap:shrinkwrap-api:${shrinkwrapVersion}",
             shrinkwrap: "org.jboss.shrinkwrap:shrinkwrap-impl-base:${shrinkwrapVersion}",
 
             shrinkwrap_descriptors_api_javaee: "org.jboss.shrinkwrap.descriptors:shrinkwrap-descriptors-api-javaee:${shrinkwrapDescriptorsVersion}",
             shrinkwrap_descriptors_impl_javaee: "org.jboss.shrinkwrap.descriptors:shrinkwrap-descriptors-impl-javaee:${shrinkwrapDescriptorsVersion}",
 
-            wildfly_arquillian_container_managed: "org.wildfly.arquillian:wildfly-arquillian-container-managed:${wildflyArquillianContainerVersion}",
             jboss_vfs: "org.jboss:jboss-vfs:3.2.11.Final",
-            jipijapa_spi: "org.wildfly:jipijapa-spi:${wildflyVersion}",
             wildfly_transaction_client : 'org.wildfly.transaction:wildfly-transaction-client:1.1.7.Final',
+            // todo (jakarta): update the version when it is released
+            wildfly_transaction_client_jakarta : 'org.wildfly.transaction:wildfly-transaction-client-jakarta:1.2.0.Final-SNAPSHOT',
 
             jboss_ejb_spec_jar          : 'org.jboss.spec.javax.ejb:jboss-ejb-api_3.2_spec:1.0.0.Final',
             jboss_annotation_spec_jar   : 'org.jboss.spec.javax.annotation:jboss-annotations-api_1.2_spec:1.0.0.Final',

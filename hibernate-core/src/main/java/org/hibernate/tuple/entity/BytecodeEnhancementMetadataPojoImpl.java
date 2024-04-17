@@ -25,6 +25,7 @@ import org.hibernate.engine.spi.SharedSessionContractImplementor;
 import org.hibernate.engine.spi.Status;
 import org.hibernate.mapping.PersistentClass;
 import org.hibernate.persister.entity.EntityPersister;
+import org.hibernate.persister.spi.PersisterCreationContext;
 import org.hibernate.type.CompositeType;
 
 /**
@@ -38,12 +39,12 @@ public final class BytecodeEnhancementMetadataPojoImpl implements BytecodeEnhanc
 			PersistentClass persistentClass,
 			Set<String> identifierAttributeNames,
 			CompositeType nonAggregatedCidMapper,
-			boolean allowEnhancementAsProxy,
-			boolean collectionsInDefaultFetchGroupEnabled) {
+			boolean collectionsInDefaultFetchGroupEnabled,
+			PersisterCreationContext creationContext) {
 		final Class mappedClass = persistentClass.getMappedClass();
 		final boolean enhancedForLazyLoading = PersistentAttributeInterceptable.class.isAssignableFrom( mappedClass );
 		final LazyAttributesMetadata lazyAttributesMetadata = enhancedForLazyLoading
-				? LazyAttributesMetadata.from( persistentClass, true, allowEnhancementAsProxy, collectionsInDefaultFetchGroupEnabled )
+				? LazyAttributesMetadata.from( persistentClass, true, collectionsInDefaultFetchGroupEnabled, creationContext )
 				: LazyAttributesMetadata.nonEnhanced( persistentClass.getEntityName() );
 
 		return new BytecodeEnhancementMetadataPojoImpl(

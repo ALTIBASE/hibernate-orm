@@ -16,6 +16,7 @@ import org.hibernate.QueryException;
 import org.hibernate.Session;
 import org.hibernate.Transaction;
 import org.hibernate.cfg.AvailableSettings;
+import org.hibernate.dialect.DerbyDialect;
 
 import org.hibernate.dialect.AltibaseDialect;
 import org.hibernate.testing.SkipForDialect;
@@ -250,6 +251,7 @@ public class WithClauseTest extends BaseCoreFunctionalTestCase {
 	@Test
 	@TestForIssue(jiraKey = "HHH-11401")
 	@SkipForDialect(value = AltibaseDialect.class, comment = "Altibase does not support complex inner join")
+	@SkipForDialect(value = DerbyDialect.class,comment = "Derby does not support cast from INTEGER to VARCHAR")
 	public void testWithClauseAsSubqueryWithKeyAndOtherJoinReference() {
 		TestData data = new TestData();
 		data.prepare();

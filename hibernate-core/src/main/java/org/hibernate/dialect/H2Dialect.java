@@ -73,6 +73,7 @@ public class H2Dialect extends Dialect {
 		}
 	};
 
+	private final boolean supportsTuplesInSubqueries;
 	private final String querySequenceString;
 	private final SequenceInformationExtractor sequenceInformationExtractor;
 
@@ -83,6 +84,7 @@ public class H2Dialect extends Dialect {
 		super();
 
 		int buildId = Integer.MIN_VALUE;
+		boolean supportsTuplesInSubqueries = false;
 
 		try {
 			// HHH-2300
@@ -94,6 +96,7 @@ public class H2Dialect extends Dialect {
 			if ( ! ( majorVersion > 1 || minorVersion > 2 || buildId >= 139 ) ) {
 				LOG.unsupportedMultiTableBulkHqlJpaql( majorVersion, minorVersion, buildId );
 			}
+			supportsTuplesInSubqueries = majorVersion > 1 || minorVersion > 4 || buildId >= 198;
 		}
 		catch ( Exception e ) {
 			// probably H2 not in the classpath, though in certain app server environments it might just mean we are
@@ -111,6 +114,7 @@ public class H2Dialect extends Dialect {
 			this.sequenceInformationExtractor = SequenceInformationExtractorNoOpImpl.INSTANCE;
 			this.querySequenceString = null;
 		}
+		this.supportsTuplesInSubqueries = supportsTuplesInSubqueries;
 
 		registerColumnType( Types.BOOLEAN, "boolean" );
 		registerColumnType( Types.BIGINT, "bigint" );
@@ -118,7 +122,7 @@ public class H2Dialect extends Dialect {
 		registerColumnType( Types.BIT, "boolean" );
 		registerColumnType( Types.CHAR, "char($l)" );
 		registerColumnType( Types.DATE, "date" );
-		registerColumnType( Types.DECIMAL, buildId >= 201 ? "numeric($p,$s)" : "decimal($p,$s)" );
+		registerColumnType( Types.DECIMAL, "decimal($p,$s)" );
 		registerColumnType( Types.NUMERIC, buildId >= 201 ? "numeric($p,$s)" : "decimal($p,$s)" );
 		registerColumnType( Types.DOUBLE, "double" );
 		registerColumnType( Types.FLOAT, "float" );
@@ -206,8 +210,12 @@ public class H2Dialect extends Dialect {
 		registerFunction( "curtime", new NoArgSQLFunction( "curtime", StandardBasicTypes.TIME ) );
 		registerFunction( "curtimestamp", new NoArgSQLFunction( "curtimestamp", StandardBasicTypes.TIME ) );
 		registerFunction( "current_date", new NoArgSQLFunction( "current_date", StandardBasicTypes.DATE ) );
-		registerFunction( "current_time", new NoArgSQLFunction( "current_time", StandardBasicTypes.TIME ) );
-		registerFunction( "current_timestamp", new NoArgSQLFunction( "current_timestamp", StandardBasicTypes.TIMESTAMP ) );
+		// H2 made a nasty breaking change that changed the type of
+		// - current_timestamp to timestamp with time zone
+		// - current_time to time with time zone
+		// and also refuses to implicitly convert the type
+		registerFunction( "current_time", new NoArgSQLFunction( buildId >= 200 ? "localtime" : "current_time", StandardBasicTypes.TIME ) );
+		registerFunction( "current_timestamp", new NoArgSQLFunction( buildId >= 200 ? "localtimestamp" : "current_timestamp", StandardBasicTypes.TIMESTAMP ) );
 		registerFunction( "datediff", new StandardSQLFunction( "datediff", StandardBasicTypes.INTEGER ) );
 		registerFunction( "dayname", new StandardSQLFunction( "dayname", StandardBasicTypes.STRING ) );
 		registerFunction( "dayofmonth", new StandardSQLFunction( "dayofmonth", StandardBasicTypes.INTEGER ) );
@@ -432,7 +440,7 @@ public class H2Dialect extends Dialect {
 
 	@Override
 	public boolean supportsTuplesInSubqueries() {
-		return false;
+		return supportsTuplesInSubqueries;
 	}
 
 	// Do not drop constraints explicitly, just do this by cascading instead.

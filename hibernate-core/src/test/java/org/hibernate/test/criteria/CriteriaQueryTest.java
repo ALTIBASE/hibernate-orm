@@ -39,6 +39,7 @@ import org.hibernate.dialect.AltibaseDialect;
 import org.hibernate.dialect.Oracle8iDialect;
 import org.hibernate.dialect.SQLServerDialect;
 import org.hibernate.dialect.SybaseASE15Dialect;
+import org.hibernate.engine.jdbc.connections.spi.ConnectionProvider;
 import org.hibernate.exception.SQLGrammarException;
 import org.hibernate.internal.util.SerializationHelper;
 import org.hibernate.transform.Transformers;
@@ -93,6 +94,7 @@ public class CriteriaQueryTest extends BaseNonConfigCoreFunctionalTestCase {
 		);
 		settings.put( AvailableSettings.USE_SECOND_LEVEL_CACHE, "true" );
 		settings.put( AvailableSettings.GENERATE_STATISTICS, "true" );
+		connectionProvider.setConnectionProvider( (ConnectionProvider) settings.get( AvailableSettings.CONNECTION_PROVIDER ) );
 		settings.put(
 				AvailableSettings.CONNECTION_PROVIDER,
 				connectionProvider

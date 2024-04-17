@@ -19,7 +19,7 @@ import javax.persistence.criteria.Root;
 import javax.persistence.criteria.SetJoin;
 import javax.persistence.metamodel.EntityType;
 import org.hibernate.dialect.CockroachDB192Dialect;
-import org.hibernate.dialect.AltibaseDialect;
+import org.hibernate.dialect.AltibaseDialect;import org.hibernate.dialect.CockroachDB192Dialect;
 import org.hibernate.dialect.H2Dialect;
 import org.hibernate.jpa.test.BaseEntityManagerFunctionalTestCase;
 import org.hibernate.jpa.test.metamodel.Address;

@@ -9,10 +9,10 @@ name: Hibernate ORM build
 on:
   push:
     branches:
-      - '5.4'
+      - '5.5'
   pull_request:
     branches:
-      - '5.4'
+      - '5.5'
 
 permissions: {} # none
 
@@ -36,16 +36,24 @@ jobs:
       matrix:
         include:
           - rdbms: h2
-#          - rdbms: derby
-#          - rdbms: mariadb
+          - rdbms: derby
+          - rdbms: mariadb
           - rdbms: postgresql
-#          - rdbms: oracle
-#          - rdbms: db2
-#          - rdbms: mssql
+          - rdbms: oracle
+          - rdbms: db2
+          - rdbms: mssql
+# Running with HANA requires at least 8GB memory just for the database, which we don't have on GH Actions runners
+#          - rdbms: hana
     steps:
       - uses: actions/checkout@v2
+        with:
+          persist-credentials: false
       - name: Reclaim Disk Space
         run: .github/ci-prerequisites.sh
+      - name: Start database
+        env:
+          RDBMS: ${{ matrix.rdbms }}
+        run: ci/database-start.sh
       - name: Set up Java 8
         uses: actions/setup-java@v1
         with:
@@ -87,6 +95,8 @@ jobs:
     continue-on-error: true
     steps:
       - uses: actions/checkout@v2
+        with:
+          persist-credentials: false
       - name: Set up Java 11
         uses: actions/setup-java@v1
         with:

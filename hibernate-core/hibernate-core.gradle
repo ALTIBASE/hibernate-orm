@@ -25,7 +25,7 @@ sourceSets {
     // resources inherently exclude sources
     test {
         resources {
-            setSrcDirs( ['src/test/java','src/test/resources'] )
+            setSrcDirs( ['src/test/java','src/test/resources','src/test/bundles'] )
         }
     }
 
@@ -61,11 +61,6 @@ dependencies {
     compile( libraries.classmate )
     compile( libraries.activation )
 
-    // We need dom4j for a number of things temporarily:
-    //      1) (unsupported) EntityMode.DOM4J support
-    //      2) Envers
-    //      3) hibernate-commons-annotations
-    compile( libraries.dom4j )
     compile( libraries.commons_annotations )
     antlr( libraries.antlr )
 
@@ -95,10 +90,7 @@ dependencies {
     testCompile( libraries.jodaTime )
     testCompile( libraries.assertj )
 
-    testCompile( libraries.cdi ) {
-        // we need to force it to make sure we influence the one coming from arquillian
-        force=true
-    }
+    testCompile( libraries.cdi )
 
     testCompile( libraries.validator ) {
         // for test runtime
@@ -120,11 +112,8 @@ dependencies {
 
     testAnnotationProcessor( project( ':hibernate-jpamodelgen' ) )
 
-    testCompile libraries.arquillian_junit_container
-    testCompile libraries.arquillian_protocol_servlet
     testCompile libraries.shrinkwrap_descriptors_api_javaee
     testCompile libraries.shrinkwrap_descriptors_impl_javaee
-    testCompile libraries.wildfly_arquillian_container_managed
 
     testCompile libraries.jboss_ejb_spec_jar
     testCompile libraries.jboss_annotation_spec_jar
@@ -156,6 +145,7 @@ jar {
                         // For JPA, we don't want to target the automatically generated range, but a specific version
                         "javax.persistence;version=\"${project.jpaVersion.osgiName}\"",
                         // optionals
+                        'jakarta.persistence.spi;resolution:=optional',
                         'javax.management;resolution:=optional',
                         'javax.naming.event;resolution:=optional',
                         'javax.naming.spi;resolution:=optional',
@@ -206,6 +196,11 @@ xjc {
             xjcBinding = file( 'src/main/xjb/hbm-mapping-bindings.xjb' )
             xjcExtensions = ['inheritance', 'simplify']
         }
+        mapping {
+            xsd = file( 'src/main/resources/org/hibernate/jpa/orm_2_2.xsd' )
+            xjcBinding = file( 'src/main/xjb/mapping-bindings.xjb' )
+            xjcExtensions = ['inheritance']
+        }
     }
 }
 
@@ -224,7 +219,7 @@ task copyBundleResources (type: Copy) {
         ext.bundleTokens['buildDirName'] = buildDir.absolutePath
     }
 
-    from file('src/test/bundles')
+    from file('src/test/bundles/templates')
     into ext.bundlesTargetDir
     filter( ReplaceTokens, tokens: ext.bundleTokens)
 
@@ -234,7 +229,12 @@ task copyBundleResources (type: Copy) {
 }
 processTestResources.dependsOn copyBundleResources
 
+sourcesJar {
+    duplicatesStrategy = DuplicatesStrategy.EXCLUDE
+}
+
 task testJar(type: Jar, dependsOn: testClasses) {
+    duplicatesStrategy = DuplicatesStrategy.EXCLUDE
     archiveClassifier.set( 'test' )
     from sourceSets.test.output
 }
@@ -242,22 +242,6 @@ task testJar(type: Jar, dependsOn: testClasses) {
 artifacts {
     tests testJar
 }
-
-processTestResources {
-    doLast {
-        copy {
-            from file( 'src/test/resources' )
-            into file( "${buildDir}/resources/test" )
-            include 'arquillian.xml'
-            include 'org/hibernate/test/wf/ddl/manifest.mf'
-            expand wildFlyInstallDir: project( ':hibernate-orm-modules' ).wildFlyInstallDir,
-                   hibernateMajorMinorVersion: "${project.ormVersion.family}",
-                   arquillianDeploymentExportDir: "${rootProject.buildDir.absolutePath}/arquillian-deployments"
-        }
-    }
-}
-
-test.dependsOn ':hibernate-orm-modules:prepareWildFlyForTests'
 
 test {
     systemProperty 'file.encoding', 'utf-8'
@@ -272,6 +256,12 @@ test {
 
     beforeTest { descriptor ->
         //println "Starting test: " + descriptor
+    }
+    // Allow to exclude specific tests
+    if (project.hasProperty('excludeTests')) {
+        filter {
+            excludeTestsMatching project.property('excludeTests').toString()
+        }
     }
 }
 

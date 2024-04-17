@@ -19,14 +19,9 @@ import javax.persistence.GeneratedValue;
 import javax.persistence.Id;
 
 import org.hibernate.annotations.Immutable;
-import org.hibernate.cfg.AvailableSettings;
-import org.hibernate.cfg.Environment;
 
 import org.hibernate.testing.bytecode.enhancement.BytecodeEnhancerRunner;
 import org.hibernate.testing.junit4.BaseCoreFunctionalTestCase;
-import org.junit.Assume;
-import org.junit.Before;
-import org.junit.BeforeClass;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 
@@ -40,15 +35,6 @@ public class FinalFieldEnhancementTest extends BaseCoreFunctionalTestCase {
 				EntityWithEmbeddedIdWithFinalField.class, EntityWithEmbeddedIdWithFinalField.EmbeddableId.class,
 				EntityWithEmbeddedNonIdWithFinalField.class, EntityWithEmbeddedNonIdWithFinalField.EmbeddableNonId.class
 		};
-	}
-
-	@BeforeClass
-	public static void checkBytebuddy() {
-		String byteCodeProvider = Environment.getProperties().getProperty( AvailableSettings.BYTECODE_PROVIDER );
-		// skip the test if the bytecode provider is Javassist
-		Assume.assumeTrue( "This test will only pass with Bytebuddy bytecode enhancement (currently using '"
-						+ byteCodeProvider + "')",
-				byteCodeProvider == null || Environment.BYTECODE_PROVIDER_NAME_BYTEBUDDY.equals( byteCodeProvider ) );
 	}
 
 	@Test

@@ -69,6 +69,10 @@ import org.hibernate.TypeHelper;
 import org.hibernate.TypeMismatchException;
 import org.hibernate.UnknownProfileException;
 import org.hibernate.UnresolvableObjectException;
+import org.hibernate.bytecode.enhance.spi.interceptor.BytecodeLazyAttributeInterceptor;
+import org.hibernate.bytecode.enhance.spi.interceptor.EnhancementAsProxyLazinessInterceptor;
+import org.hibernate.bytecode.enhance.spi.interceptor.LazyAttributeLoadingInterceptor;
+import org.hibernate.bytecode.spi.BytecodeEnhancementMetadata;
 import org.hibernate.collection.spi.PersistentCollection;
 import org.hibernate.criterion.NaturalIdentifier;
 import org.hibernate.engine.internal.StatefulPersistenceContext;
@@ -87,6 +91,8 @@ import org.hibernate.engine.spi.EntityKey;
 import org.hibernate.engine.spi.LoadQueryInfluencers;
 import org.hibernate.engine.spi.NamedQueryDefinition;
 import org.hibernate.engine.spi.PersistenceContext;
+import org.hibernate.engine.spi.PersistentAttributeInterceptable;
+import org.hibernate.engine.spi.PersistentAttributeInterceptor;
 import org.hibernate.engine.spi.QueryParameters;
 import org.hibernate.engine.spi.SessionFactoryImplementor;
 import org.hibernate.engine.spi.SessionImplementor;
@@ -169,6 +175,10 @@ import org.hibernate.stat.SessionStatistics;
 import org.hibernate.stat.internal.SessionStatisticsImpl;
 import org.hibernate.stat.spi.StatisticsImplementor;
 
+import static org.hibernate.cfg.AvailableSettings.JAKARTA_JPA_LOCK_SCOPE;
+import static org.hibernate.cfg.AvailableSettings.JAKARTA_JPA_LOCK_TIMEOUT;
+import static org.hibernate.cfg.AvailableSettings.JAKARTA_JPA_SHARED_CACHE_RETRIEVE_MODE;
+import static org.hibernate.cfg.AvailableSettings.JAKARTA_JPA_SHARED_CACHE_STORE_MODE;
 import static org.hibernate.cfg.AvailableSettings.JPA_LOCK_SCOPE;
 import static org.hibernate.cfg.AvailableSettings.JPA_LOCK_TIMEOUT;
 import static org.hibernate.cfg.AvailableSettings.JPA_SHARED_CACHE_RETRIEVE_MODE;
@@ -299,8 +309,28 @@ public class SessionImpl
 		if ( ( queryTimeout = getSessionProperty( QueryHints.SPEC_HINT_TIMEOUT )  ) != null ) {
 			query.setHint( QueryHints.SPEC_HINT_TIMEOUT, queryTimeout );
 		}
+		final Object jakartaQueryTimeout;
+		if ( ( jakartaQueryTimeout = getSessionProperty( QueryHints.JAKARTA_SPEC_HINT_TIMEOUT )  ) != null ) {
+			query.setHint( QueryHints.JAKARTA_SPEC_HINT_TIMEOUT, jakartaQueryTimeout );
+		}
 		final Object lockTimeout;
-		if ( ( lockTimeout = getSessionProperty( JPA_LOCK_TIMEOUT ) ) != null ) {
+		final Object jpaLockTimeout = getSessionProperty( JPA_LOCK_TIMEOUT );
+		if ( jpaLockTimeout == null ) {
+			lockTimeout = getSessionProperty( JAKARTA_JPA_LOCK_TIMEOUT );
+		}
+		else if ( Integer.valueOf( LockOptions.WAIT_FOREVER ).equals( jpaLockTimeout ) ) {
+			final Object jakartaLockTimeout = getSessionProperty( JAKARTA_JPA_LOCK_TIMEOUT );
+			if ( jakartaLockTimeout == null ) {
+				lockTimeout = jpaLockTimeout;
+			}
+			else {
+				lockTimeout = jakartaLockTimeout;
+			}
+		}
+		else {
+			lockTimeout = jpaLockTimeout;
+		}
+		if ( lockTimeout != null ) {
 			query.setHint( JPA_LOCK_TIMEOUT, lockTimeout );
 		}
 	}
@@ -377,8 +407,7 @@ public class SessionImpl
 			}
 			else {
 				//Otherwise, session auto-close will be enabled by shouldAutoCloseSession().
-				waitingForAutoClose = true;
-				closed = true;
+				prepareForAutoClose();
 			}
 		}
 		else {
@@ -2777,7 +2806,11 @@ public class SessionImpl
 			if ( this.lockOptions != null ) {
 				LoadEvent event = new LoadEvent( id, entityPersister.getEntityName(), lockOptions, SessionImpl.this, getReadOnlyFromLoadQueryInfluencers() );
 				fireLoad( event, LoadEventListener.GET );
-				return (T) event.getResult();
+
+				final Object result = event.getResult();
+				initializeIfNecessary( result );
+
+				return (T) result;
 			}
 
 			LoadEvent event = new LoadEvent( id, entityPersister.getEntityName(), false, SessionImpl.this, getReadOnlyFromLoadQueryInfluencers() );
@@ -2792,7 +2825,36 @@ public class SessionImpl
 			finally {
 				afterOperation( success );
 			}
-			return (T) event.getResult();
+
+			final Object result = event.getResult();
+			initializeIfNecessary( result );
+
+			return (T) result;
+		}
+
+		private void initializeIfNecessary(Object result) {
+			if ( result == null ) {
+				return;
+			}
+
+			if ( result instanceof HibernateProxy ) {
+				final HibernateProxy hibernateProxy = (HibernateProxy) result;
+				final LazyInitializer initializer = hibernateProxy.getHibernateLazyInitializer();
+				if ( initializer.isUninitialized() ) {
+					initializer.initialize();
+				}
+				return;
+			}
+
+			final BytecodeEnhancementMetadata enhancementMetadata = entityPersister.getEntityMetamodel().getBytecodeEnhancementMetadata();
+			if ( ! enhancementMetadata.isEnhancedForLazyLoading() ) {
+				return;
+			}
+
+			final BytecodeLazyAttributeInterceptor interceptor = enhancementMetadata.extractLazyInterceptor(result);
+			if ( interceptor instanceof EnhancementAsProxyLazinessInterceptor ) {
+				( (EnhancementAsProxyLazinessInterceptor) interceptor ).forceInitialize( result, null );
+			}
 		}
 	}
 
@@ -3386,11 +3448,19 @@ public class SessionImpl
 	}
 
 	private static CacheRetrieveMode determineCacheRetrieveMode(Map<String, Object> settings) {
-		return ( CacheRetrieveMode ) settings.get( JPA_SHARED_CACHE_RETRIEVE_MODE );
+		final CacheRetrieveMode cacheRetrieveMode = (CacheRetrieveMode) settings.get( JPA_SHARED_CACHE_RETRIEVE_MODE );
+		if ( cacheRetrieveMode == null ) {
+			return (CacheRetrieveMode) settings.get( JAKARTA_JPA_SHARED_CACHE_RETRIEVE_MODE );
+		}
+		return cacheRetrieveMode;
 	}
 
 	private static CacheStoreMode determineCacheStoreMode(Map<String, Object> settings) {
-		return ( CacheStoreMode ) settings.get( JPA_SHARED_CACHE_STORE_MODE );
+		final CacheStoreMode cacheStoreMode = (CacheStoreMode) settings.get( JPA_SHARED_CACHE_STORE_MODE );
+		if ( cacheStoreMode == null ) {
+			return ( CacheStoreMode ) settings.get( JAKARTA_JPA_SHARED_CACHE_STORE_MODE );
+		}
+		return cacheStoreMode;
 	}
 
 	private void checkTransactionNeededForUpdateOperation() {
@@ -3536,10 +3606,14 @@ public class SessionImpl
 		if ( AvailableSettings.FLUSH_MODE.equals( propertyName ) ) {
 			setHibernateFlushMode( ConfigurationHelper.getFlushMode( value, FlushMode.AUTO ) );
 		}
-		else if ( JPA_LOCK_SCOPE.equals( propertyName ) || JPA_LOCK_TIMEOUT.equals(  propertyName ) ) {
+		else if ( JPA_LOCK_SCOPE.equals( propertyName ) || JPA_LOCK_TIMEOUT.equals( propertyName )
+				|| JAKARTA_JPA_LOCK_SCOPE.equals( propertyName ) || JAKARTA_JPA_LOCK_TIMEOUT.equals( propertyName ) ) {
 			LockOptionsHelper.applyPropertiesToLockOptions( properties, this::getLockOptionsForWrite );
 		}
-		else if ( JPA_SHARED_CACHE_RETRIEVE_MODE.equals( propertyName ) || JPA_SHARED_CACHE_STORE_MODE.equals(  propertyName ) ) {
+		else if ( JPA_SHARED_CACHE_RETRIEVE_MODE.equals( propertyName )
+				|| JPA_SHARED_CACHE_STORE_MODE.equals( propertyName )
+				|| JAKARTA_JPA_SHARED_CACHE_RETRIEVE_MODE.equals( propertyName )
+				|| JAKARTA_JPA_SHARED_CACHE_STORE_MODE.equals( propertyName ) ) {
 			getSession().setCacheMode(
 					CacheModeHelper.interpretCacheMode(
 							determineCacheStoreMode( properties ),

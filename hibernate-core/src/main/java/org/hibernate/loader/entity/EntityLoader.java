@@ -97,7 +97,7 @@ public class EntityLoader extends AbstractEntityLoader {
 				loadQueryInfluencers
 		);
 		initFromWalker( walker );
-		this.compositeKeyManyToOneTargetIndices = walker.getCompositeKeyManyToOneTargetIndices();
+		compositeKeyManyToOneTargetIndices = walker.getCompositeKeyManyToOneTargetIndices();
 		postInstantiate();
 
 		batchLoader = batchSize > 1;
@@ -126,7 +126,39 @@ public class EntityLoader extends AbstractEntityLoader {
 				loadQueryInfluencers
 		);
 		initFromWalker( walker );
-		this.compositeKeyManyToOneTargetIndices = walker.getCompositeKeyManyToOneTargetIndices();
+		compositeKeyManyToOneTargetIndices = walker.getCompositeKeyManyToOneTargetIndices();
+		postInstantiate();
+
+		batchLoader = batchSize > 1;
+
+		if ( LOG.isDebugEnabled() ) {
+			LOG.debugf( "Static select for entity %s [%s:%s]: %s",
+					entityName,
+					lockOptions.getLockMode(),
+					lockOptions.getTimeOut(),
+					getSQLString() );
+		}
+	}
+
+	public EntityLoader(
+			OuterJoinLoadable persister,
+			boolean[] valueNullness,
+			int batchSize,
+			LockOptions lockOptions,
+			SessionFactoryImplementor factory,
+			LoadQueryInfluencers loadQueryInfluencers) throws MappingException {
+		super( persister, new NaturalIdType( persister, valueNullness ), factory, loadQueryInfluencers );
+
+		EntityJoinWalker walker = new NaturalIdEntityJoinWalker(
+				persister,
+				valueNullness,
+				batchSize,
+				lockOptions,
+				factory,
+				loadQueryInfluencers
+		);
+		initFromWalker( walker );
+		compositeKeyManyToOneTargetIndices = walker.getCompositeKeyManyToOneTargetIndices();
 		postInstantiate();
 
 		batchLoader = batchSize > 1;
@@ -165,4 +197,5 @@ public class EntityLoader extends AbstractEntityLoader {
 	public int[][] getCompositeKeyManyToOneTargetIndices() {
 		return compositeKeyManyToOneTargetIndices;
 	}
+
 }

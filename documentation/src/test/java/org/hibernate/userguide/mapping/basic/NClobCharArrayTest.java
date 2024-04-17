@@ -13,6 +13,7 @@ import javax.persistence.Table;
 
 import org.hibernate.annotations.Nationalized;
 import org.hibernate.dialect.AltibaseDialect;
+import org.hibernate.dialect.DB2Dialect;
 import org.hibernate.dialect.MySQL5Dialect;
 import org.hibernate.dialect.PostgreSQL81Dialect;
 import org.hibernate.jpa.test.BaseEntityManagerFunctionalTestCase;
@@ -30,9 +31,10 @@ import static org.junit.Assert.assertArrayEquals;
         value = {
                 PostgreSQL81Dialect.class,
                 MySQL5Dialect.class,
-                AltibaseDialect.class
+                AltibaseDialect.class,
+                DB2Dialect.class
         },
-        comment = "@see https://hibernate.atlassian.net/browse/HHH-10693 and https://hibernate.atlassian.net/browse/HHH-10695"
+        comment = "@see https://hibernate.atlassian.net/browse/HHH-10693 and https://hibernate.atlassian.net/browse/HHH-10695 and https://hibernate.atlassian.net/browse/HHH-10473"
 )
 public class NClobCharArrayTest extends BaseEntityManagerFunctionalTestCase {
 

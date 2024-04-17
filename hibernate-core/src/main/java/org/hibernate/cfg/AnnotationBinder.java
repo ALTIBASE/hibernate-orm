@@ -8,7 +8,6 @@ package org.hibernate.cfg;
 
 import java.util.ArrayList;
 import java.util.Arrays;
-import java.util.Collection;
 import java.util.Collections;
 import java.util.EnumSet;
 import java.util.HashMap;
@@ -146,6 +145,7 @@ import org.hibernate.cfg.annotations.PropertyBinder;
 import org.hibernate.cfg.annotations.QueryBinder;
 import org.hibernate.cfg.annotations.SimpleValueBinder;
 import org.hibernate.cfg.annotations.TableBinder;
+import org.hibernate.cfg.internal.NullableDiscriminatorColumnSecondPass;
 import org.hibernate.engine.OptimisticLockStyle;
 import org.hibernate.engine.config.spi.ConfigurationService;
 import org.hibernate.engine.config.spi.StandardConverters;
@@ -312,7 +312,7 @@ public final class AnnotationBinder {
 		if ( packaze == null ) {
 			return;
 		}
-		final XPackage pckg = HCANNHelper.toXPackage( context.getBootstrapContext().getReflectionManager(), packaze );
+		final XPackage pckg = context.getBootstrapContext().getReflectionManager().toXPackage( packaze );
 
 		if ( pckg.isAnnotationPresent( SequenceGenerator.class ) ) {
 			SequenceGenerator ann = pckg.getAnnotation( SequenceGenerator.class );
@@ -1431,7 +1431,7 @@ public final class AnnotationBinder {
 			return;
 		}
 		final ReflectionManager reflectionManager = context.getBootstrapContext().getReflectionManager();
-		final XPackage pckg = HCANNHelper.toXPackage( reflectionManager, packaze );
+		final XPackage pckg = reflectionManager.toXPackage( packaze );
 		bindFetchProfiles( pckg, context );
 	}
 
@@ -1486,6 +1486,8 @@ public final class AnnotationBinder {
 			if ( LOG.isTraceEnabled() ) {
 				LOG.tracev( "Setting discriminator for entity {0}", rootClass.getEntityName() );
 			}
+			context.getMetadataCollector().addSecondPass(
+					new NullableDiscriminatorColumnSecondPass( rootClass.getEntityName() ) );
 		}
 	}
 
@@ -3164,7 +3166,8 @@ public final class AnnotationBinder {
 		}
 		else {
 			toOne.setLazy( fetchType == FetchType.LAZY );
-			toOne.setUnwrapProxy( false );
+			toOne.setUnwrapProxy( fetchType != FetchType.LAZY );
+			toOne.setUnwrapProxyImplicit( true );
 		}
 		if ( fetch != null ) {
 			if ( fetch.value() == org.hibernate.annotations.FetchMode.JOIN ) {

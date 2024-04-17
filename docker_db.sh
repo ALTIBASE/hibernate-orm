@@ -2,12 +2,12 @@
 
 mysql_5_7() {
     docker rm -f mysql || true
-    docker run --name mysql -e MYSQL_USER=hibernate_orm_test -e MYSQL_PASSWORD=hibernate_orm_test -e MYSQL_DATABASE=hibernate_orm_test -e MYSQL_ROOT_PASSWORD=hibernate_orm_test -p3306:3306 -d mysql:5.7 --character-set-server=utf8mb4 --collation-server=utf8mb4_unicode_ci
+    docker run --name mysql -e MYSQL_USER=hibernate_orm_test -e MYSQL_PASSWORD=hibernate_orm_test -e MYSQL_DATABASE=hibernate_orm_test -p3306:3306 -d mysql:5.7 --character-set-server=utf8mb4 --collation-server=utf8mb4_unicode_ci
 }
 
 mysql_8_0() {
     docker rm -f mysql || true
-    docker run --name mysql -e MYSQL_USER=hibernate_orm_test -e MYSQL_PASSWORD=hibernate_orm_test -e MYSQL_ROOT_PASSWORD=hibernate_orm_test -e MYSQL_DATABASE=hibernate_orm_test -e MYSQL_ROOT_PASSWORD=hibernate_orm_test -p3306:3306 -d mysql:8.0.21 --character-set-server=utf8mb4 --collation-server=utf8mb4_unicode_ci
+    docker run --name mysql -e MYSQL_USER=hibernate_orm_test -e MYSQL_PASSWORD=hibernate_orm_test -e MYSQL_ROOT_PASSWORD=hibernate_orm_test -e MYSQL_DATABASE=hibernate_orm_test -p3306:3306 -d mysql:8.0.21 --character-set-server=utf8mb4 --collation-server=utf8mb4_unicode_ci
 }
 
 mariadb() {
@@ -18,11 +18,6 @@ mariadb() {
 postgresql_9_5() {
     docker rm -f postgres || true
     docker run --name postgres -e POSTGRES_USER=hibernate_orm_test -e POSTGRES_PASSWORD=hibernate_orm_test -e POSTGRES_DB=hibernate_orm_test -p5432:5432 -d postgres:9.5
-}
-
-postgresql_13() {
-    docker rm -f postgres || true
-    docker run --name postgres -e POSTGRES_USER=hibernate_orm_test -e POSTGRES_PASSWORD=hibernate_orm_test -e POSTGRES_DB=hibernate_orm_test -p5432:5432 -d postgres:13.0
 }
 
 postgis(){
@@ -104,7 +99,7 @@ EOF
 
 mssql() {
     docker rm -f mssql || true
-    docker run --name mssql -d -p 1433:1433 -e "SA_PASSWORD=Hibernate_orm_test" -e ACCEPT_EULA=Y microsoft/mssql-server-linux:2017-CU13
+    docker run --name mssql -d -p 1433:1433 -e "SA_PASSWORD=Hibernate_orm_test" -e ACCEPT_EULA=Y mcr.microsoft.com/mssql/server:2017-CU13
     sleep 5
     n=0
     until [ "$n" -ge 5 ]
@@ -202,6 +197,7 @@ hana() {
     chmod 777 -R $temp_dir
     docker rm -f hana || true
     docker run -d --name hana -p 39013:39013 -p 39017:39017 -p 39041-39045:39041-39045 -p 1128-1129:1128-1129 -p 59013-59014:59013-59014 \
+      --memory=8g \
       --ulimit nofile=1048576:1048576 \
       --sysctl kernel.shmmax=1073741824 \
       --sysctl net.ipv4.ip_local_port_range='40000 60999' \
@@ -247,7 +243,6 @@ if [ -z ${1} ]; then
     echo -e "\tmysql_8_0"
     echo -e "\tmariadb"
     echo -e "\tpostgresql_9_5"
-    echo -e "\tpostgresql_13"
     echo -e "\tdb2"
     echo -e "\tmssql"
     echo -e "\toracle"
