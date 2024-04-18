@@ -16,6 +16,7 @@ import org.hibernate.dialect.pagination.AltibaseLimitHandler;
 import org.hibernate.dialect.pagination.LimitHandler;
 import org.hibernate.engine.jdbc.env.spi.IdentifierHelper;
 import org.hibernate.engine.jdbc.env.spi.IdentifierHelperBuilder;
+import org.hibernate.engine.jdbc.env.spi.NameQualifierSupport;
 import org.hibernate.exception.ConstraintViolationException;
 import org.hibernate.exception.LockTimeoutException;
 import org.hibernate.exception.spi.SQLExceptionConversionDelegate;
@@ -355,6 +356,11 @@ public class AltibaseDialect extends Dialect {
 		return new GlobalTemporaryTableBulkIdStrategy(
 				new IdTableSupportStandardImpl(), AfterUseAction.CLEAN
 		);
+	}
+
+	@Override
+	public NameQualifierSupport getNameQualifierSupport() {
+		return NameQualifierSupport.SCHEMA;
 	}
 
 	/**

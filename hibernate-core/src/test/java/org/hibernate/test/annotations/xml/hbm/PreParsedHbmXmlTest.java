@@ -13,6 +13,8 @@ import java.io.UncheckedIOException;
 import org.hibernate.boot.jaxb.spi.Binding;
 import org.hibernate.cfg.Configuration;
 
+import org.hibernate.testing.DialectChecks;
+import org.hibernate.testing.RequiresDialectFeature;
 import org.hibernate.testing.TestForIssue;
 import org.hibernate.testing.junit4.BaseCoreFunctionalTestCase;
 import org.junit.Test;
@@ -20,6 +22,7 @@ import org.junit.Test;
 import static org.assertj.core.api.Assertions.assertThat;
 
 @TestForIssue(jiraKey = "HHH-14530")
+@RequiresDialectFeature(DialectChecks.SupportsIdentityColumns.class)
 public class PreParsedHbmXmlTest extends BaseCoreFunctionalTestCase {
 
 	@Override
