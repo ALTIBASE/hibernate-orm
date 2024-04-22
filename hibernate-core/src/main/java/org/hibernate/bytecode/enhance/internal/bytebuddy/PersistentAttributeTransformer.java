@@ -91,6 +91,12 @@ final class PersistentAttributeTransformer implements AsmVisitorWrapper.ForDecla
 			ByteBuddyEnhancementContext enhancementContext,
 			TypePool classPool) {
 		List<AnnotatedFieldDescription> persistentFieldList = new ArrayList<>();
+		// HHH-10646 Add fields inherited from @MappedSuperclass
+		// HHH-10981 There is no need to do it for @MappedSuperclass
+		// HHH-15505 This needs to be done first so that fields with the same name in the mappedsuperclass and entity are handled correctly
+		if ( !enhancementContext.isMappedSuperclassClass( managedCtClass ) ) {
+			persistentFieldList.addAll( collectInheritPersistentFields( managedCtClass, enhancementContext ) );
+		}
 		for ( FieldDescription ctField : managedCtClass.getDeclaredFields() ) {
 			// skip static fields and skip fields added by enhancement and  outer reference in inner classes
 			if ( ctField.getName().startsWith( "$$_hibernate_" ) || "this$0".equals( ctField.getName() ) ) {
@@ -100,11 +106,6 @@ final class PersistentAttributeTransformer implements AsmVisitorWrapper.ForDecla
 			if ( !ctField.isStatic() && enhancementContext.isPersistentField( annotatedField ) ) {
 				persistentFieldList.add( annotatedField );
 			}
-		}
-		// HHH-10646 Add fields inherited from @MappedSuperclass
-		// HHH-10981 There is no need to do it for @MappedSuperclass
-		if ( !enhancementContext.isMappedSuperclassClass( managedCtClass ) ) {
-			persistentFieldList.addAll( collectInheritPersistentFields( managedCtClass, enhancementContext ) );
 		}
 
 		AnnotatedFieldDescription[] orderedFields = enhancementContext.order( persistentFieldList.toArray( new AnnotatedFieldDescription[0] ) );
@@ -200,7 +201,8 @@ final class PersistentAttributeTransformer implements AsmVisitorWrapper.ForDecla
 		return null;
 	}
 
-	DynamicType.Builder<?> applyTo(DynamicType.Builder<?> builder) {
+	DynamicType.Builder<?> applyTo(DynamicType.Builder<?> builder, EnhancerImpl.EnhancementStatus es) {
+		builder = es.applySuperInterfaceOptimisations(builder);
 		boolean compositeOwner = false;
 
 		builder = builder.visit( new AsmVisitorWrapper.ForDeclaredMethods().invokable( NOT_HIBERNATE_GENERATED, this ) );
@@ -255,7 +257,7 @@ final class PersistentAttributeTransformer implements AsmVisitorWrapper.ForDecla
 		}
 
 		if ( enhancementContext.doExtendedEnhancement( managedCtClass ) ) {
-			builder = applyExtended( builder );
+			builder = applyExtended( builder, es );
 		}
 
 		return builder;
@@ -304,7 +306,7 @@ final class PersistentAttributeTransformer implements AsmVisitorWrapper.ForDecla
 		}
 	}
 
-	DynamicType.Builder<?> applyExtended(DynamicType.Builder<?> builder) {
+	DynamicType.Builder<?> applyExtended(DynamicType.Builder<?> builder, EnhancerImpl.EnhancementStatus es) {
 		AsmVisitorWrapper.ForDeclaredMethods.MethodVisitorWrapper enhancer = new FieldAccessEnhancer( managedCtClass, enhancementContext, classPool );
 		return builder.visit( new AsmVisitorWrapper.ForDeclaredMethods().invokable( NOT_HIBERNATE_GENERATED, enhancer ) );
 	}

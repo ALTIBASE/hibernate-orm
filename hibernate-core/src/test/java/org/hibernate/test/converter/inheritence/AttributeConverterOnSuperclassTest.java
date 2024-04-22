@@ -9,6 +9,7 @@ package org.hibernate.test.converter.inheritence;
 import java.util.List;
 import javax.persistence.AttributeConverter;
 
+import org.hibernate.boot.model.convert.internal.ClassBasedConverterDescriptor;
 import org.hibernate.cfg.AttributeConverterDefinition;
 
 import org.hibernate.testing.TestForIssue;

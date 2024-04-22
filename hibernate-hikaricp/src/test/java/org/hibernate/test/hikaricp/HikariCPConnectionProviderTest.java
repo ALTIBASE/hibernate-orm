@@ -12,6 +12,7 @@ import java.util.ArrayList;
 import java.util.List;
 
 import org.hibernate.dialect.AltibaseDialect;
+import org.hibernate.dialect.SybaseDialect;
 import org.hibernate.engine.jdbc.env.internal.JdbcEnvironmentInitiator.ConnectionProviderJdbcConnectionAccess;
 import org.hibernate.engine.jdbc.spi.JdbcServices;
 import org.hibernate.hikaricp.internal.HikariCPConnectionProvider;
@@ -29,6 +30,7 @@ import static org.junit.Assert.fail;
 /**
  * @author Brett Meyer
  */
+@SkipForDialect(value = SybaseDialect.class, comment = "The jTDS driver doesn't implement Connection#isValid so this fails")
 @SkipForDialect(value = AltibaseDialect.class, comment = "Altibase driver doesn't implement Connection#isValid so this fails")
 public class HikariCPConnectionProviderTest extends BaseCoreFunctionalTestCase {
 

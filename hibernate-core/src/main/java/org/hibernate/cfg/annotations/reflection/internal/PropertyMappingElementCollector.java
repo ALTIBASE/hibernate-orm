@@ -43,9 +43,9 @@ import org.hibernate.boot.jaxb.mapping.spi.PersistentAttribute;
  *     <li>Only create lists if we actually have elements (most lists should be empty in most cases)</li>
  * </ul>
  */
-final class PropertyMappingElementCollector {
-	static final Function<PersistentAttribute, String> PERSISTENT_ATTRIBUTE_NAME = PersistentAttribute::getName;
-	static final Function<JaxbTransient, String> JAXB_TRANSIENT_NAME = JaxbTransient::getName;
+public final class PropertyMappingElementCollector {
+	public static final Function<PersistentAttribute, String> PERSISTENT_ATTRIBUTE_NAME = PersistentAttribute::getName;
+	public static final Function<JaxbTransient, String> JAXB_TRANSIENT_NAME = JaxbTransient::getName;
 	static final Function<LifecycleCallback, String> LIFECYCLE_CALLBACK_NAME = LifecycleCallback::getMethodName;
 
 	private final String propertyName;
@@ -70,7 +70,7 @@ final class PropertyMappingElementCollector {
 	private List<JaxbPostUpdate> postUpdate;
 	private List<JaxbPostLoad> postLoad;
 
-	PropertyMappingElementCollector(String propertyName) {
+	public PropertyMappingElementCollector(String propertyName) {
 		this.propertyName = propertyName;
 	}
 

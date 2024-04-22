@@ -179,7 +179,6 @@ import org.hibernate.boot.jaxb.mapping.spi.JaxbSqlResultSetMapping;
 import org.hibernate.boot.jaxb.mapping.spi.JaxbStoredProcedureParameter;
 import org.hibernate.boot.jaxb.mapping.spi.JaxbTable;
 import org.hibernate.boot.jaxb.mapping.spi.JaxbTableGenerator;
-import org.hibernate.boot.jaxb.mapping.spi.JaxbTransient;
 import org.hibernate.boot.jaxb.mapping.spi.JaxbUniqueConstraint;
 import org.hibernate.boot.jaxb.mapping.spi.JaxbVersion;
 import org.hibernate.boot.jaxb.mapping.spi.LifecycleCallbackContainer;
@@ -407,7 +406,9 @@ public class JPAXMLOverriddenAnnotationReader implements AnnotationReader {
 	 */
 	private void initAnnotations() {
 		if ( annotations == null ) {
-			XMLContext.Default defaults = xmlContext.getDefault( className );
+			// We don't want the global catalog and schema here: they are applied much later,
+			// when SQL gets rendered.
+			XMLContext.Default defaults = xmlContext.getDefaultWithoutGlobalCatalogAndSchema( className );
 			if ( className != null && propertyName == null ) {
 				//is a class
 				ManagedType managedTypeOverride = xmlContext.getManagedTypeOverride( className );

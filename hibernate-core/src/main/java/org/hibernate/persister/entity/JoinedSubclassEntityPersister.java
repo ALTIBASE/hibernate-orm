@@ -13,7 +13,6 @@ import org.hibernate.QueryException;
 import org.hibernate.boot.model.relational.Database;
 import org.hibernate.cache.spi.access.EntityDataAccess;
 import org.hibernate.cache.spi.access.NaturalIdDataAccess;
-import org.hibernate.engine.jdbc.env.spi.JdbcEnvironment;
 import org.hibernate.engine.spi.ExecuteUpdateResultCheckStyle;
 import org.hibernate.engine.spi.SessionFactoryImplementor;
 import org.hibernate.internal.DynamicFilterAliasGenerator;
@@ -136,7 +135,6 @@ public class JoinedSubclassEntityPersister extends AbstractEntityPersister {
 
 		final SessionFactoryImplementor factory = creationContext.getSessionFactory();
 		final Database database = creationContext.getMetadata().getDatabase();
-		final JdbcEnvironment jdbcEnvironment = database.getJdbcEnvironment();
 
 		// DISCRIMINATOR
 
@@ -215,7 +213,7 @@ public class JoinedSubclassEntityPersister extends AbstractEntityPersister {
 		while ( tItr.hasNext() ) {
 			final Table table = (Table) tItr.next();
 			final KeyValue key = (KeyValue) kItr.next();
-			final String tableName = determineTableName( table, jdbcEnvironment );
+			final String tableName = determineTableName( table );
 			tableNames.add( tableName );
 			String[] keyCols = new String[idColumnSpan];
 			String[] keyColReaders = new String[idColumnSpan];
@@ -248,7 +246,7 @@ public class JoinedSubclassEntityPersister extends AbstractEntityPersister {
 			isInverseTable[tableIndex] = join.isInverse();
 
 			Table table = join.getTable();
-			final String tableName = determineTableName( table, jdbcEnvironment );
+			final String tableName = determineTableName( table );
 			tableNames.add( tableName );
 
 			KeyValue key = join.getKey();
@@ -294,7 +292,7 @@ public class JoinedSubclassEntityPersister extends AbstractEntityPersister {
 			isLazies.add( Boolean.FALSE );
 			isInverses.add( Boolean.FALSE );
 			isNullables.add( Boolean.FALSE );
-			final String tableName = determineTableName( tab, jdbcEnvironment );
+			final String tableName = determineTableName( tab );
 			subclassTableNames.add( tableName );
 			String[] key = new String[idColumnSpan];
 			Iterator cItr = tab.getPrimaryKey().getColumnIterator();
@@ -316,7 +314,7 @@ public class JoinedSubclassEntityPersister extends AbstractEntityPersister {
 			isNullables.add( join.isOptional() );
 			isLazies.add( join.isLazy() );
 
-			String joinTableName = determineTableName( joinTable, jdbcEnvironment );
+			String joinTableName = determineTableName( joinTable );
 			subclassTableNames.add( joinTableName );
 			String[] key = new String[idColumnSpan];
 			Iterator citer = joinTable.getPrimaryKey().getColumnIterator();
@@ -440,9 +438,7 @@ public class JoinedSubclassEntityPersister extends AbstractEntityPersister {
 		while ( iter.hasNext() ) {
 			Property prop = (Property) iter.next();
 			String tabname = prop.getValue().getTable().getQualifiedName(
-					factory.getDialect(),
-					factory.getSettings().getDefaultCatalogName(),
-					factory.getSettings().getDefaultSchemaName()
+					factory.getSqlStringGenerationContext()
 			);
 			propertyTableNumbers[i] = getTableId( tabname, this.tableNames );
 			naturalOrderPropertyTableNumbers[i] = getTableId( tabname, naturalOrderTableNames );
@@ -462,9 +458,7 @@ public class JoinedSubclassEntityPersister extends AbstractEntityPersister {
 			Property prop = (Property) iter.next();
 			Table tab = prop.getValue().getTable();
 			String tabname = tab.getQualifiedName(
-					factory.getDialect(),
-					factory.getSettings().getDefaultCatalogName(),
-					factory.getSettings().getDefaultSchemaName()
+					factory.getSqlStringGenerationContext()
 			);
 			Integer tabnum = getTableId( tabname, subclassTableNameClosure );
 			propTableNumbers.add( tabnum );
@@ -498,9 +492,7 @@ public class JoinedSubclassEntityPersister extends AbstractEntityPersister {
 			notNullColumnTableNumbers = new int[subclassSpan];
 			final int id = getTableId(
 					persistentClass.getTable().getQualifiedName(
-							factory.getDialect(),
-							factory.getSettings().getDefaultCatalogName(),
-							factory.getSettings().getDefaultSchemaName()
+							factory.getSqlStringGenerationContext()
 					),
 					subclassTableNameClosure
 			);
@@ -552,9 +544,7 @@ public class JoinedSubclassEntityPersister extends AbstractEntityPersister {
 					discriminatorValues[k] = discriminatorValue.toString();
 					int id = getTableId(
 							sc.getTable().getQualifiedName(
-									factory.getDialect(),
-									factory.getSettings().getDefaultCatalogName(),
-									factory.getSettings().getDefaultSchemaName()
+									factory.getSqlStringGenerationContext()
 							),
 							subclassTableNameClosure
 					);
@@ -677,9 +667,7 @@ public class JoinedSubclassEntityPersister extends AbstractEntityPersister {
 			SessionFactoryImplementor factory) {
 
 		final String tableName = persistentClass.getTable().getQualifiedName(
-				factory.getDialect(),
-				factory.getSettings().getDefaultCatalogName(),
-				factory.getSettings().getDefaultSchemaName()
+				factory.getSqlStringGenerationContext()
 		);
 
 		associateSubclassNamesToSubclassTableIndex( tableName, classNames, mapping );
@@ -688,9 +676,7 @@ public class JoinedSubclassEntityPersister extends AbstractEntityPersister {
 		while ( itr.hasNext() ) {
 			final Join join = (Join) itr.next();
 			final String secondaryTableName = join.getTable().getQualifiedName(
-					factory.getDialect(),
-					factory.getSettings().getDefaultCatalogName(),
-					factory.getSettings().getDefaultSchemaName()
+					factory.getSqlStringGenerationContext()
 			);
 			associateSubclassNamesToSubclassTableIndex( secondaryTableName, classNames, mapping );
 		}

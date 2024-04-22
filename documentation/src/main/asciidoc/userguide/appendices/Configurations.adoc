@@ -434,7 +434,7 @@ Enable lazy loading feature in runtime bytecode enhancement. This way, even basi
 Enable association management feature in runtime bytecode enhancement which automatically synchronizes a bidirectional association when only one side is changed.
 
 `*hibernate.bytecode.provider*` (e.g. `bytebuddy` (default value))::
-The https://docs.jboss.org/hibernate/orm/{majorMinorVersion}/javadocs/org/hibernate/bytecode/spi/BytecodeProvider.html[`BytecodeProvider`] built-in implementation flavor. Currently, only `bytebuddy` and `javassist` are valid values; `bytebuddy` is the default and recommended choice; `javassist` will be removed soon.
+The https://docs.jboss.org/hibernate/orm/{majorMinorVersion}/javadocs/org/hibernate/bytecode/spi/BytecodeProvider.html[`BytecodeProvider`] built-in implementation flavor. Currently, only `bytebuddy` is a valid value, as older deprecated options have been removed.
 
 `*hibernate.bytecode.use_reflection_optimizer*` (e.g. `true` or `false` (default value))::
 Should we use reflection optimization? The reflection optimizer implements the https://docs.jboss.org/hibernate/orm/{majorMinorVersion}/javadocs/org/hibernate/bytecode/spi/ReflectionOptimizer.html[`ReflectionOptimizer`] interface and improves entity instantiation and property getter/setter calls.
@@ -1101,8 +1101,8 @@ Like a `PersisterClassResolver`, the `PersisterFactory` can be used to customize
 `*hibernate.service.allow_crawling*` (e.g. `true` (default value) or `false`)::
 Crawl all available service bindings for an alternate registration of a given Hibernate `Service`.
 
-`*hibernate.metadata_builder_contributor*` (e.g. The instance, the class or the fully qualified class name of a https://docs.jboss.org/hibernate/orm/{majorMinorVersion}/javadocs/org/hibernate/jpa/boot/spi/MetadataBuilderContributor.html[`MetadataBuilderContributor`])::
-Used to define an instance, the class or the fully qualified class name of a https://docs.jboss.org/hibernate/orm/{majorMinorVersion}/javadocs/org/hibernate/jpa/boot/spi/MetadataBuilderContributor.html[`MetadataBuilderContributor`] which can be used to configure the `MetadataBuilder` when bootstrapping via the JPA `EntityManagerFactory`.
+`*hibernate.metadata_builder_contributor*` (e.g. The instance, the class or the fully qualified class name of a https://docs.jboss.org/hibernate/orm/{majorMinorVersion}/javadocs/org/hibernate/boot/spi/MetadataBuilderContributor.html[`MetadataBuilderContributor`])::
+Used to define an instance, the class or the fully qualified class name of a https://docs.jboss.org/hibernate/orm/{majorMinorVersion}/javadocs/org/hibernate/boot/spi/MetadataBuilderContributor.html[`MetadataBuilderContributor`] which can be used to configure the `MetadataBuilder` when bootstrapping via the JPA `EntityManagerFactory`.
 
 [[configurations-misc]]
 === Miscellaneous properties

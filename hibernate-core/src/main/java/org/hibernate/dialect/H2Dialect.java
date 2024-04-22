@@ -8,6 +8,7 @@ package org.hibernate.dialect;
 
 import java.sql.SQLException;
 import java.sql.Types;
+import java.util.List;
 
 import org.hibernate.JDBCException;
 import org.hibernate.PessimisticLockException;
@@ -15,9 +16,11 @@ import org.hibernate.boot.TempTableDdlTransactionHandling;
 import org.hibernate.cfg.AvailableSettings;
 import org.hibernate.dialect.function.AvgWithArgumentCastFunction;
 import org.hibernate.dialect.function.NoArgSQLFunction;
+import org.hibernate.dialect.function.SQLFunctionTemplate;
 import org.hibernate.dialect.function.StandardSQLFunction;
 import org.hibernate.dialect.function.VarArgsSQLFunction;
 import org.hibernate.dialect.hint.IndexQueryHintHandler;
+import org.hibernate.dialect.identity.H2FinalTableIdentityColumnSupport;
 import org.hibernate.dialect.identity.H2IdentityColumnSupport;
 import org.hibernate.dialect.identity.IdentityColumnSupport;
 import org.hibernate.dialect.pagination.AbstractLimitHandler;
@@ -74,6 +77,8 @@ public class H2Dialect extends Dialect {
 	};
 
 	private final boolean supportsTuplesInSubqueries;
+	private final boolean hasOddDstBehavior;
+	private final boolean isVersion2;
 	private final String querySequenceString;
 	private final SequenceInformationExtractor sequenceInformationExtractor;
 
@@ -85,6 +90,8 @@ public class H2Dialect extends Dialect {
 
 		int buildId = Integer.MIN_VALUE;
 		boolean supportsTuplesInSubqueries = false;
+		boolean hasOddDstBehavior = false;
+		boolean isVersion2 = false;
 
 		try {
 			// HHH-2300
@@ -97,6 +104,9 @@ public class H2Dialect extends Dialect {
 				LOG.unsupportedMultiTableBulkHqlJpaql( majorVersion, minorVersion, buildId );
 			}
 			supportsTuplesInSubqueries = majorVersion > 1 || minorVersion > 4 || buildId >= 198;
+			// As of 1.4.200, the DST handling for timestamp without time zone is odd
+			hasOddDstBehavior = majorVersion > 1 || minorVersion > 4 || buildId >= 200;
+			isVersion2 = majorVersion > 1;
 		}
 		catch ( Exception e ) {
 			// probably H2 not in the classpath, though in certain app server environments it might just mean we are
@@ -115,6 +125,8 @@ public class H2Dialect extends Dialect {
 			this.querySequenceString = null;
 		}
 		this.supportsTuplesInSubqueries = supportsTuplesInSubqueries;
+		this.hasOddDstBehavior = hasOddDstBehavior;
+		this.isVersion2 = isVersion2;
 
 		registerColumnType( Types.BOOLEAN, "boolean" );
 		registerColumnType( Types.BIGINT, "bigint" );
@@ -139,6 +151,12 @@ public class H2Dialect extends Dialect {
 		registerColumnType( Types.VARBINARY, buildId >= 201 ? "varbinary($l)" : "binary($l)" );
 		registerColumnType( Types.BLOB, "blob" );
 		registerColumnType( Types.CLOB, "clob" );
+
+		if ( isVersion2 ) {
+			registerColumnType( Types.LONGVARCHAR, "character varying" );
+			registerColumnType( Types.BINARY, "binary($l)" );
+			registerFunction( "str", new SQLFunctionTemplate( StandardBasicTypes.STRING, "cast(?1 as character varying)") );
+		}
 
 		// Aggregations ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 		registerFunction( "avg", new AvgWithArgumentCastFunction( "double" ) );
@@ -235,6 +253,15 @@ public class H2Dialect extends Dialect {
 		getDefaultProperties().setProperty( AvailableSettings.NON_CONTEXTUAL_LOB_CREATION, "true" );
 	}
 
+	public boolean hasOddDstBehavior() {
+		// H2 1.4.200 has a bug: https://github.com/h2database/h2database/issues/3184
+		return hasOddDstBehavior;
+	}
+
+	public boolean isVersion2() {
+		return isVersion2;
+	}
+
 	@Override
 	public String getAddColumnString() {
 		return "add column";
@@ -243,6 +270,11 @@ public class H2Dialect extends Dialect {
 	@Override
 	public String getForUpdateString() {
 		return " for update";
+	}
+
+	@Override
+	public String toBooleanValueString(boolean bool) {
+		return String.valueOf( bool );
 	}
 
 	@Override
@@ -423,6 +455,13 @@ public class H2Dialect extends Dialect {
 	// Overridden informational metadata ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 	@Override
+	public void augmentPhysicalTableTypes(List<String> tableTypesList) {
+		if ( isVersion2 ) {
+			tableTypesList.add( "BASE TABLE" );
+		}
+	}
+
+	@Override
 	public boolean supportsLobValueChangePropogation() {
 		return false;
 	}
@@ -467,7 +506,7 @@ public class H2Dialect extends Dialect {
 
 	@Override
 	public IdentityColumnSupport getIdentityColumnSupport() {
-		return new H2IdentityColumnSupport();
+		return isVersion2 ? H2FinalTableIdentityColumnSupport.INSTANCE : H2IdentityColumnSupport.INSTANCE;
 	}
 
 	@Override

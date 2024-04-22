@@ -16,6 +16,7 @@ import org.hibernate.dialect.AltibaseDialect;
 import org.hibernate.dialect.DB2Dialect;
 import org.hibernate.dialect.MySQL5Dialect;
 import org.hibernate.dialect.PostgreSQL81Dialect;
+import org.hibernate.dialect.SybaseASE15Dialect;
 import org.hibernate.jpa.test.BaseEntityManagerFunctionalTestCase;
 
 import org.hibernate.testing.SkipForDialect;
@@ -36,6 +37,7 @@ import static org.junit.Assert.assertArrayEquals;
         },
         comment = "@see https://hibernate.atlassian.net/browse/HHH-10693 and https://hibernate.atlassian.net/browse/HHH-10695 and https://hibernate.atlassian.net/browse/HHH-10473"
 )
+@SkipForDialect(value = SybaseASE15Dialect.class, comment = "jTDS driver doesn't implement nationalized handling")
 public class NClobCharArrayTest extends BaseEntityManagerFunctionalTestCase {
 
     @Override

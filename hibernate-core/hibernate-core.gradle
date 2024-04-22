@@ -25,14 +25,7 @@ sourceSets {
     // resources inherently exclude sources
     test {
         resources {
-            setSrcDirs( ['src/test/java','src/test/resources','src/test/bundles'] )
-        }
-    }
-
-    testJavassist {
-        java {
-            compileClasspath += main.output + test.output
-            runtimeClasspath += main.output + test.output
+            srcDir 'src/test/java'
         }
     }
 }
@@ -41,18 +34,11 @@ configurations {
     tests {
         description = 'Configuration for the produced test jar'
     }
-
-    //Configures the compile and runtime configurations for our javassist tests
-    //and includes the dependencies of the test task.
-    testJavassistCompile.extendsFrom testCompile
-    testJavassistRuntime.extendsFrom testRuntime
 }
 
 dependencies {
 
     compile( libraries.jpa )
-    // This can now be made provided
-    compile( libraries.javassist )
     // Could be made optional?
     compile( libraries.byteBuddy )
     compile( libraries.antlr )
@@ -103,7 +89,6 @@ dependencies {
     testRuntime( "org.jboss.spec.javax.ejb:jboss-ejb-api_3.2_spec:1.0.0.Final" )
     testRuntime( libraries.expression_language )
     testRuntime( 'jaxen:jaxen:1.1' )
-    testRuntime( libraries.javassist )
     testRuntime( libraries.byteBuddy )
     testRuntime( libraries.weld )
     testRuntime( libraries.atomikos )
@@ -118,9 +103,6 @@ dependencies {
     testCompile libraries.jboss_ejb_spec_jar
     testCompile libraries.jboss_annotation_spec_jar
 
-    // Additional tests requiring Javassist
-    // folder in src/javassist/java
-    testJavassistCompile libraries.javassist
 }
 
 jar {
@@ -214,18 +196,13 @@ tasks.compile.dependsOn generateGrammarSource
 
 task copyBundleResources (type: Copy) {
     ext {
-        bundlesTargetDir = file( "${buildDir}/bundles" )
         bundleTokens = dbBundle[db]
         ext.bundleTokens['buildDirName'] = buildDir.absolutePath
     }
 
-    from file('src/test/bundles/templates')
-    into ext.bundlesTargetDir
+    from 'src/test/bundles/templates'
+    into "${buildDir}/bundles"
     filter( ReplaceTokens, tokens: ext.bundleTokens)
-
-    doFirst {
-        ext.bundlesTargetDir.mkdirs()
-    }
 }
 processTestResources.dependsOn copyBundleResources
 
@@ -237,6 +214,9 @@ task testJar(type: Jar, dependsOn: testClasses) {
     duplicatesStrategy = DuplicatesStrategy.EXCLUDE
     archiveClassifier.set( 'test' )
     from sourceSets.test.output
+    from( "${buildDir}/bundles" ) {
+        into 'bundles'
+    }
 }
 
 artifacts {
@@ -257,6 +237,7 @@ test {
     beforeTest { descriptor ->
         //println "Starting test: " + descriptor
     }
+
     // Allow to exclude specific tests
     if (project.hasProperty('excludeTests')) {
         filter {
@@ -265,35 +246,3 @@ test {
     }
 }
 
-//Create the task that runs the integration tests found from the
-//configured source directory and uses the correct classpath.
-task testJavassist(type: Test) {
-    testClassesDirs = sourceSets.testJavassist.output.classesDirs
-    classpath = sourceSets.testJavassist.runtimeClasspath
-    //If you want to ensure that integration tests are run every time when you invoke
-    //this task, uncomment the following line.
-    //outputs.upToDateWhen { false }
-
-    if ( gradle.ext.javaToolchainEnabled ) {
-        // Configure version of Java tools
-        javaLauncher = javaToolchains.launcherFor {
-            languageVersion = gradle.ext.javaVersions.test.launcher
-        }
-
-        //  Configure JVM Options
-        jvmArgs( getProperty( 'toolchain.launcher.jvmargs' ).toString().split( ' ' ) )
-
-        // Display version of Java tools
-        doFirst {
-            logger.lifecycle "Testing javassist with '${javaLauncher.get().metadata.installationPath}'"
-        }
-    }
-
-    if ( gradle.ext.javaVersions.test.launcher.asInt() >= 9 ) {
-        // Javassist needs this to generate proxies
-        jvmArgs( ['--add-opens', 'java.base/java.lang=ALL-UNNAMED'] )
-    }
-}
-
-check.dependsOn testJavassist
-testJavassist.mustRunAfter test

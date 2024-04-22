@@ -46,6 +46,7 @@ tokens
 	EXISTS="exists";
 	FALSE="false";
 	FETCH="fetch";
+	FK_REF;
 	FROM="from";
 	FULL="full";
 	GROUP="group";
@@ -722,13 +723,20 @@ atom
 
 // level 0 - the basic element of an expression
 primaryExpression
-    : { validateSoftKeyword("function") && LA(2) == OPEN && LA(3) == QUOTED_STRING }? jpaFunctionSyntax
+    : { validateSoftKeyword("fk") && LA(2) == OPEN }? fkRefPath
+    | { validateSoftKeyword("function") && LA(2) == OPEN && LA(3) == QUOTED_STRING }? jpaFunctionSyntax
     | { validateSoftKeyword("cast") && LA(2) == OPEN }? castFunction
     | { validateSoftKeyword("size") && LA(2) == OPEN }? collectionSizeFunction
 	| identPrimary ( options {greedy=true;} : DOT^ "class" )?
 	| constant
 	| parameter
 	| OPEN! (expressionOrVector | subQuery) CLOSE!
+	;
+
+fkRefPath!
+	: "fk" OPEN p:identPrimary CLOSE {
+		#fkRefPath = #( [FK_REF], #p );
+	}
 	;
 
 jpaFunctionSyntax!
@@ -824,6 +832,7 @@ identPrimary
 				        #identPrimary = #( [ENTRY], path );
 				    }
 				}
+				| (DOT^ FK_REF)
 			)?
 	// Also allow special 'aggregate functions' such as count(), avg(), etc.
 	| aggregate

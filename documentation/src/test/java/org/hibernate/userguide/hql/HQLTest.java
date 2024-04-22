@@ -32,6 +32,7 @@ import org.hibernate.dialect.MySQL5Dialect;
 import org.hibernate.dialect.Oracle8iDialect;
 import org.hibernate.dialect.PostgreSQL81Dialect;
 import org.hibernate.dialect.SQLServerDialect;
+import org.hibernate.dialect.SybaseASE15Dialect;
 import org.hibernate.jpa.test.BaseEntityManagerFunctionalTestCase;
 import org.hibernate.type.StringType;
 import org.hibernate.userguide.model.AddressType;
@@ -1319,6 +1320,7 @@ public class HQLTest extends BaseEntityManagerFunctionalTestCase {
 
 	@Test
 	@SkipForDialect(SQLServerDialect.class)
+	@SkipForDialect(value = SybaseASE15Dialect.class, comment = "current_date requires parenthesis which we don't render")
 	@SkipForDialect(value = DerbyDialect.class, comment = "Comparisons between 'DATE' and 'TIMESTAMP' are not supported")
 	public void test_hql_current_date_function_example() {
 		doInJPA( this::entityManagerFactory, entityManager -> {
@@ -1361,6 +1363,7 @@ public class HQLTest extends BaseEntityManagerFunctionalTestCase {
 	}
 
 	@Test
+	@SkipForDialect(value = SybaseASE15Dialect.class, comment = "current_timestamp requires parenthesis which we don't render")
 	public void test_hql_current_timestamp_function_example() {
 		doInJPA( this::entityManagerFactory, entityManager -> {
 			//tag::hql-current-timestamp-function-example[]
@@ -1435,6 +1438,7 @@ public class HQLTest extends BaseEntityManagerFunctionalTestCase {
 
 	@Test
 	@SkipForDialect(SQLServerDialect.class)
+	@SkipForDialect(value = SybaseASE15Dialect.class, comment = "No proper implementation for the STR function available")
 	public void test_hql_str_function_example() {
 		doInJPA( this::entityManagerFactory, entityManager -> {
 			//tag::hql-str-function-example[]

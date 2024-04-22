@@ -8,10 +8,12 @@
 // build a map of the dependency artifacts to use.  Allows centralized definition of the version of artifacts to
 // use.  In that respect it serves a role similar to <dependencyManagement> in Maven
 ext {
+    junit5Version = '5.8.2'
+    junitVintageVersion = junit5Version
+    junit4Version = '4.13.2'
 
-    junitVersion = '4.13.2'
     h2Version = '1.4.197'
-    bytemanVersion = '4.0.16' //Compatible with JDK 17
+    bytemanVersion = '4.0.20' //Compatible with JDK 20
     jnpVersion = '5.0.6.CR1'
 
     hibernateCommonsVersion = '5.1.2.Final'
@@ -24,8 +26,7 @@ ext {
     weldVersion = '3.1.5.Final'
     jakartaWeldVersion = '4.0.1.SP1'
 
-    javassistVersion = '3.27.0-GA'
-    byteBuddyVersion = '1.11.12'
+    byteBuddyVersion = '1.12.18'
 
     agroalVersion = '1.9'
 
@@ -45,9 +46,9 @@ ext {
     jakartaJaxbRuntimeVersion = '3.0.0'
 
     //GraalVM
-    graalvmVersion = '19.3.1'
+    graalvmVersion = '21.3.0'
 
-    micrometerVersion = '1.6.1'
+    micrometerVersion = '1.9.3'
 
     libraries = [
             // Ant
@@ -58,14 +59,11 @@ ext {
 
             // Annotations
             commons_annotations: "org.hibernate.common:hibernate-commons-annotations:${hibernateCommonsVersion}",
-            jandex:         'org.jboss:jandex:2.2.3.Final',
+            jandex:         'org.jboss:jandex:2.4.2.Final',
             classmate:      'com.fasterxml:classmate:1.5.1',
 
             // Dom4J
             dom4j:          'org.dom4j:dom4j:2.1.3@jar',
-
-            // Javassist
-            javassist:      "org.javassist:javassist:${javassistVersion}",
 
             // Byte Buddy
             byteBuddy:      "net.bytebuddy:byte-buddy:${byteBuddyVersion}",
@@ -92,9 +90,9 @@ ext {
             jakarta_cdi:            'jakarta.enterprise:jakarta.enterprise.cdi-api:3.0.0',
 
             // logging
-            logging:        'org.jboss.logging:jboss-logging:3.4.2.Final',
-            logging_annotations: 'org.jboss.logging:jboss-logging-annotations:2.1.0.Final',
-            logging_processor:  'org.jboss.logging:jboss-logging-processor:2.1.0.Final',
+            logging:        'org.jboss.logging:jboss-logging:3.4.3.Final',
+            logging_annotations: 'org.jboss.logging:jboss-logging-annotations:2.2.1.Final',
+            logging_processor:  'org.jboss.logging:jboss-logging-processor:2.2.1.Final',
 
             // jaxb task
             jaxb_api: "javax.xml.bind:jaxb-api:${jaxbApiVersion}",
@@ -120,23 +118,30 @@ ext {
 
             // ~~~~~~~~~~~~~~~~~~~~~~~~~~ testing
 
+            junit5_api:     "org.junit.jupiter:junit-jupiter-api:${junit5Version}",
+            junit5_jupiter: "org.junit.jupiter:junit-jupiter-engine:${junit5Version}",
+            junit5_params : "org.junit.jupiter:junit-jupiter-params:${junit5Version}",
+            junit:          "junit:junit:${junit4Version}",
+            junit5_vintage: "org.junit.vintage:junit-vintage-engine:${junitVintageVersion}",
+
             log4j2:          "org.apache.logging.log4j:log4j-core:2.17.1",
-            junit:           "junit:junit:${junitVersion}",
+
             byteman:         "org.jboss.byteman:byteman:${bytemanVersion}",
             byteman_install: "org.jboss.byteman:byteman-install:${bytemanVersion}",
             byteman_bmunit:  "org.jboss.byteman:byteman-bmunit:${bytemanVersion}",
             h2:              "com.h2database:h2:${h2Version}",
             hsqldb:          "org.hsqldb:hsqldb:2.3.2",
             derby:           "org.apache.derby:derby:10.14.2.0",
-            postgresql:      'org.postgresql:postgresql:42.2.16',
-            mysql:           'mysql:mysql-connector-java:8.0.17',
+            postgresql:      'org.postgresql:postgresql:42.5.0',
+            mysql:           'mysql:mysql-connector-java:8.0.27',
             mariadb:         'org.mariadb.jdbc:mariadb-java-client:2.2.3',
-            cockroachdb:     'org.postgresql:postgresql:42.2.8',
+            cockroachdb:     'org.postgresql:postgresql:42.5.0',
 
-            oracle:          'com.oracle.database.jdbc:ojdbc8:21.1.0.0',
+            oracle:          'com.oracle.database.jdbc:ojdbc8:21.3.0.0',
             mssql:           'com.microsoft.sqlserver:mssql-jdbc:7.2.1.jre8',
             db2:             'com.ibm.db2:jcc:11.5.4.0',
             hana:            'com.sap.cloud.db.jdbc:ngdbc:2.4.59',
+            sybase:          'net.sourceforge.jtds:jtds:1.3.1',
 
             jodaTime:        "joda-time:joda-time:${jodaTimeVersion}",
 
@@ -166,7 +171,7 @@ ext {
             vibur:           "org.vibur:vibur-dbcp:25.0",
             agroal_api:      "io.agroal:agroal-api:${agroalVersion}",
             agroal_pool:     "io.agroal:agroal-pool:${agroalVersion}",
-            micrometer:      "io.micrometer:micrometer-core:1.6.1",
+            micrometer:      "io.micrometer:micrometer-core:${micrometerVersion}",
 
             atomikos:         "com.atomikos:transactions:4.0.6",
             atomikos_jta:     "com.atomikos:transactions-jta:4.0.6",

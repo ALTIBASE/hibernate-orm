@@ -17,10 +17,14 @@ import org.hibernate.LockMode;
 import org.hibernate.bytecode.enhance.spi.CollectionTracker;
 import org.hibernate.bytecode.enhance.spi.LazyPropertyInitializer;
 import org.hibernate.collection.spi.PersistentCollection;
+import org.hibernate.engine.internal.ManagedTypeHelper;
 import org.hibernate.engine.spi.SelfDirtinessTracker;
 import org.hibernate.engine.spi.SharedSessionContractImplementor;
 import org.hibernate.engine.spi.Status;
 import org.hibernate.persister.entity.EntityPersister;
+
+import static org.hibernate.engine.internal.ManagedTypeHelper.asSelfDirtinessTracker;
+import static org.hibernate.engine.internal.ManagedTypeHelper.isSelfDirtinessTracker;
 
 /**
  * Interceptor that loads attributes lazily
@@ -30,6 +34,8 @@ import org.hibernate.persister.entity.EntityPersister;
  */
 public class LazyAttributeLoadingInterceptor extends AbstractLazyLoadInterceptor {
 	private final Object identifier;
+
+	//N.B. this Set needs to be treated as immutable
 	private final Set<String> lazyFields;
 	private Set<String> initializedLazyFields;
 
@@ -40,7 +46,8 @@ public class LazyAttributeLoadingInterceptor extends AbstractLazyLoadInterceptor
 			SharedSessionContractImplementor session) {
 		super( entityName, session );
 		this.identifier = identifier;
-		this.lazyFields = lazyFields;
+		//Important optimisation to not actually do a Map lookup for entities which don't have any lazy fields at all:
+		this.lazyFields = org.hibernate.internal.util.collections.CollectionHelper.toSmallSet( lazyFields );
 	}
 
 	@Override
@@ -121,7 +128,7 @@ public class LazyAttributeLoadingInterceptor extends AbstractLazyLoadInterceptor
 	}
 
 	private boolean isLazyAttribute(String fieldName) {
-		return lazyFields == null || lazyFields.contains( fieldName );
+		return lazyFields.contains( fieldName );
 	}
 
 	private boolean isInitializedLazyField(String fieldName) {
@@ -129,7 +136,7 @@ public class LazyAttributeLoadingInterceptor extends AbstractLazyLoadInterceptor
 	}
 
 	public boolean hasAnyUninitializedAttributes() {
-		if ( lazyFields == null || lazyFields.isEmpty() ) {
+		if ( lazyFields.isEmpty() ) {
 			return false;
 		}
 
@@ -152,13 +159,14 @@ public class LazyAttributeLoadingInterceptor extends AbstractLazyLoadInterceptor
 	}
 
 	private void takeCollectionSizeSnapshot(Object target, String fieldName, Object value) {
-		if ( value instanceof Collection && target instanceof SelfDirtinessTracker ) {
+		if ( value instanceof Collection && isSelfDirtinessTracker( target ) ) {
 			// This must be called first, so that we remember that there is a collection out there,
 			// even if we don't know its size (see below).
-			CollectionTracker tracker = ( (SelfDirtinessTracker) target ).$$_hibernate_getCollectionTracker();
+			final SelfDirtinessTracker trackerAsSDT = asSelfDirtinessTracker( target );
+			CollectionTracker tracker = trackerAsSDT.$$_hibernate_getCollectionTracker();
 			if ( tracker == null ) {
-				( (SelfDirtinessTracker) target ).$$_hibernate_clearDirtyAttributes();
-				tracker = ( (SelfDirtinessTracker) target ).$$_hibernate_getCollectionTracker();
+				trackerAsSDT.$$_hibernate_clearDirtyAttributes();
+				tracker = trackerAsSDT.$$_hibernate_getCollectionTracker();
 			}
 
 			if ( value instanceof PersistentCollection && !( (PersistentCollection) value ).wasInitialized() ) {

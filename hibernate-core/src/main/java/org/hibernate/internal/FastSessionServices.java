@@ -6,17 +6,25 @@
  */
 package org.hibernate.internal;
 
+import java.util.Collections;
+import java.util.HashMap;
+import java.util.Map;
+import java.util.Objects;
+import javax.persistence.CacheRetrieveMode;
+import javax.persistence.CacheStoreMode;
+import javax.persistence.PessimisticLockScope;
+
 import org.hibernate.CacheMode;
 import org.hibernate.FlushMode;
 import org.hibernate.LockOptions;
 import org.hibernate.boot.registry.classloading.spi.ClassLoaderService;
 import org.hibernate.boot.spi.SessionFactoryOptions;
+import org.hibernate.cfg.AvailableSettings;
 import org.hibernate.cfg.BaselineSessionEventsListenerBuilder;
 import org.hibernate.cfg.Environment;
 import org.hibernate.dialect.Dialect;
 import org.hibernate.engine.jdbc.connections.spi.ConnectionProvider;
 import org.hibernate.engine.jdbc.connections.spi.MultiTenantConnectionProvider;
-import org.hibernate.engine.jdbc.spi.ConnectionObserver;
 import org.hibernate.engine.jdbc.spi.JdbcServices;
 import org.hibernate.event.service.spi.EventListenerGroup;
 import org.hibernate.event.service.spi.EventListenerRegistry;
@@ -52,7 +60,9 @@ import org.hibernate.event.spi.RefreshEventListener;
 import org.hibernate.event.spi.ReplicateEventListener;
 import org.hibernate.event.spi.ResolveNaturalIdEventListener;
 import org.hibernate.event.spi.SaveOrUpdateEventListener;
-import org.hibernate.jpa.AvailableSettings;
+import org.hibernate.hql.spi.QueryTranslatorFactory;
+import org.hibernate.internal.log.DeprecationLogger;
+import org.hibernate.internal.util.NullnessHelper;
 import org.hibernate.jpa.QueryHints;
 import org.hibernate.jpa.internal.util.CacheModeHelper;
 import org.hibernate.jpa.internal.util.ConfigurationHelper;
@@ -60,16 +70,6 @@ import org.hibernate.jpa.internal.util.LockOptionsHelper;
 import org.hibernate.resource.transaction.spi.TransactionCoordinatorBuilder;
 import org.hibernate.service.spi.ServiceRegistryImplementor;
 import org.hibernate.type.descriptor.sql.SqlTypeDescriptor;
-
-import java.util.Collections;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
-import java.util.Objects;
-
-import javax.persistence.CacheRetrieveMode;
-import javax.persistence.CacheStoreMode;
-import javax.persistence.PessimisticLockScope;
 
 import static org.hibernate.cfg.AvailableSettings.JAKARTA_JPA_LOCK_SCOPE;
 import static org.hibernate.cfg.AvailableSettings.JAKARTA_JPA_LOCK_TIMEOUT;
@@ -161,12 +161,16 @@ public final class FastSessionServices {
 	final boolean discardOnClose;
 	final BaselineSessionEventsListenerBuilder defaultSessionEventListeners;
 	final LockOptions defaultLockOptions;
+	final int defaultJdbcBatchSize;
 
 	//Private fields:
-	private final Dialect dialect;
 	private final CacheStoreMode defaultCacheStoreMode;
 	private final CacheRetrieveMode defaultCacheRetrieveMode;
 	private final ConnectionObserverStatsBridge defaultJdbcObservers;
+
+	//Public fields:
+	public final Dialect dialect;
+	public final QueryTranslatorFactory queryTranslatorFactory;
 
 	FastSessionServices(SessionFactoryImpl sf) {
 		Objects.requireNonNull( sf );
@@ -218,6 +222,7 @@ public final class FastSessionServices {
 		this.disallowOutOfTransactionUpdateOperations = !sessionFactoryOptions.isAllowOutOfTransactionUpdateOperations();
 		this.useStreamForLobBinding = Environment.useStreamsForBinary() || dialect.useInputStreamToInsertBlob();
 		this.requiresMultiTenantConnectionProvider = sf.getSettings().getMultiTenancyStrategy().requiresMultiTenantConnectionProvider();
+		this.defaultJdbcBatchSize = sessionFactoryOptions.getJdbcBatchSize();
 
 		//Some "hot" services:
 		this.connectionProvider = requiresMultiTenantConnectionProvider ? null : sr.getService( ConnectionProvider.class );
@@ -225,6 +230,7 @@ public final class FastSessionServices {
 		this.classLoaderService = sr.getService( ClassLoaderService.class );
 		this.transactionCoordinatorBuilder = sr.getService( TransactionCoordinatorBuilder.class );
 		this.jdbcServices = sr.getService( JdbcServices.class );
+		this.queryTranslatorFactory = sr.getService( QueryTranslatorFactory.class );
 
 		this.isJtaTransactionAccessible = isTransactionAccessible( sf, transactionCoordinatorBuilder );
 
@@ -241,8 +247,15 @@ public final class FastSessionServices {
 	}
 
 	private static FlushMode initializeDefaultFlushMode(Map<String, Object> defaultSessionProperties) {
-		Object setMode = defaultSessionProperties.get( AvailableSettings.FLUSH_MODE );
-		return ConfigurationHelper.getFlushMode( setMode, FlushMode.AUTO );
+		final Object setting = NullnessHelper.coalesceSuppliedValues(
+				() -> defaultSessionProperties.get( AvailableSettings.FLUSH_MODE ),
+				() -> {
+					final Object oldSetting = defaultSessionProperties.get( org.hibernate.jpa.AvailableSettings.FLUSH_MODE );
+					//Not invoking the DeprecationLogger in this case as the user can't avoid using this property (the string value is the same)
+					return oldSetting;
+				}
+		);
+		return ConfigurationHelper.getFlushMode( setting, FlushMode.AUTO );
 	}
 
 	private static LockOptions initializeDefaultLockOptions(final Map<String, Object> defaultSessionProperties) {

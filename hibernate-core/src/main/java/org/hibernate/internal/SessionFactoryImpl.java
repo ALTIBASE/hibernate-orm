@@ -18,7 +18,6 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.TimeZone;
-import java.util.function.Function;
 import java.util.function.Supplier;
 import javax.naming.Reference;
 import javax.naming.StringRefAddr;
@@ -49,6 +48,8 @@ import org.hibernate.StatelessSessionBuilder;
 import org.hibernate.TypeHelper;
 import org.hibernate.boot.cfgxml.spi.CfgXmlAccessService;
 import org.hibernate.boot.cfgxml.spi.LoadedConfig;
+import org.hibernate.boot.model.relational.SqlStringGenerationContext;
+import org.hibernate.boot.model.relational.internal.SqlStringGenerationContextImpl;
 import org.hibernate.boot.registry.classloading.spi.ClassLoaderService;
 import org.hibernate.boot.spi.MetadataImplementor;
 import org.hibernate.boot.spi.SessionFactoryOptions;
@@ -172,6 +173,7 @@ public class SessionFactoryImpl implements SessionFactoryImplementor {
 	private final transient SessionFactoryServiceRegistry serviceRegistry;
 	private final transient EventEngine eventEngine;
 	private final transient JdbcServices jdbcServices;
+	private final transient SqlStringGenerationContext sqlStringGenerationContext;
 
 	private final transient SQLFunctionRegistry sqlFunctionRegistry;
 
@@ -233,8 +235,10 @@ public class SessionFactoryImpl implements SessionFactoryImplementor {
 
 		jdbcServices = serviceRegistry.getService( JdbcServices.class );
 
+		ConfigurationService configurationService = serviceRegistry.getService( ConfigurationService.class );
+
 		this.properties = new HashMap<>();
-		this.properties.putAll( serviceRegistry.getService( ConfigurationService.class ).getSettings() );
+		this.properties.putAll( configurationService.getSettings() );
 		if ( !properties.containsKey( AvailableSettings.JPA_VALIDATION_FACTORY )
 				&& !properties.containsKey( AvailableSettings.JAKARTA_JPA_VALIDATION_FACTORY ) ) {
 			if ( getSessionFactoryOptions().getValidatorFactoryReference() != null ) {
@@ -251,6 +255,10 @@ public class SessionFactoryImpl implements SessionFactoryImplementor {
 
 		maskOutSensitiveInformation(this.properties);
 		logIfEmptyCompositesEnabled( this.properties );
+
+		sqlStringGenerationContext = SqlStringGenerationContextImpl.fromExplicit(
+				jdbcServices.getJdbcEnvironment(), metadata.getDatabase(),
+				options.getDefaultCatalog(), options.getDefaultSchema() );
 
 		this.sqlFunctionRegistry = new SQLFunctionRegistry( jdbcServices.getJdbcEnvironment().getDialect(), options.getCustomSqlFunctionMap() );
 		this.cacheAccess = this.serviceRegistry.getService( CacheImplementor.class );
@@ -299,10 +307,9 @@ public class SessionFactoryImpl implements SessionFactoryImplementor {
 				IdentifierGenerator generator = model.getIdentifier().createIdentifierGenerator(
 						metadata.getIdentifierGeneratorFactory(),
 						jdbcServices.getJdbcEnvironment().getDialect(),
-						settings.getDefaultCatalogName(),
-						settings.getDefaultSchemaName(),
 						(RootClass) model
 				);
+				generator.initialize( sqlStringGenerationContext );
 				identifierGenerators.put( model.getEntityName(), generator );
 			} );
 			metadata.validate();
@@ -322,7 +329,8 @@ public class SessionFactoryImpl implements SessionFactoryImplementor {
 					jdbcServices,
 					buildLocalConnectionAccess(),
 					metadata,
-					sessionFactoryOptions
+					sessionFactoryOptions,
+					sqlStringGenerationContext
 			);
 
 			SchemaManagementToolCoordinator.process(
@@ -333,26 +341,6 @@ public class SessionFactoryImpl implements SessionFactoryImplementor {
 			);
 
 			currentSessionContext = buildCurrentSessionContext();
-
-			//checking for named queries
-			if ( settings.isNamedQueryStartupCheckingEnabled() ) {
-				final Map<String, HibernateException> errors = checkNamedQueries();
-				if ( !errors.isEmpty() ) {
-					StringBuilder failingQueries = new StringBuilder( "Errors in named queries: " );
-					String separator = System.lineSeparator();
-
-					for ( Map.Entry<String, HibernateException> entry : errors.entrySet() ) {
-						LOG.namedQueryError( entry.getKey(), entry.getValue() );
-
-						failingQueries
-							.append( separator)
-							.append( entry.getKey() )
-							.append( " failed because of: " )
-							.append( entry.getValue() );
-					}
-					throw new HibernateException( failingQueries.toString() );
-				}
-			}
 
 			// this needs to happen after persisters are all ready to go...
 			this.fetchProfiles = new HashMap<>();
@@ -391,6 +379,26 @@ public class SessionFactoryImpl implements SessionFactoryImplementor {
 			this.temporarySessionOpenOptions = this.defaultSessionOpenOptions == null ? null : buildTemporarySessionOpenOptions();
 			this.defaultStatelessOptions = this.defaultSessionOpenOptions == null ? null : withStatelessOptions();
 			this.fastSessionServices = new FastSessionServices( this );
+
+			//checking for named queries - requires fastSessionServices to have been initialized.
+			if ( settings.isNamedQueryStartupCheckingEnabled() ) {
+				final Map<String, HibernateException> errors = checkNamedQueries();
+				if ( !errors.isEmpty() ) {
+					StringBuilder failingQueries = new StringBuilder( "Errors in named queries: " );
+					String separator = System.lineSeparator();
+
+					for ( Map.Entry<String, HibernateException> entry : errors.entrySet() ) {
+						LOG.namedQueryError( entry.getKey(), entry.getValue() );
+
+						failingQueries
+								.append( separator)
+								.append( entry.getKey() )
+								.append( " failed because of: " )
+								.append( entry.getValue() );
+					}
+					throw new HibernateException( failingQueries.toString() );
+				}
+			}
 
 			this.observer.sessionFactoryCreated( this );
 
@@ -559,6 +567,11 @@ public class SessionFactoryImpl implements SessionFactoryImplementor {
 	@Override
 	public JdbcServices getJdbcServices() {
 		return jdbcServices;
+	}
+
+	@Override
+	public SqlStringGenerationContext getSqlStringGenerationContext() {
+		return sqlStringGenerationContext;
 	}
 
 	public IdentifierGeneratorFactory getIdentifierGeneratorFactory() {

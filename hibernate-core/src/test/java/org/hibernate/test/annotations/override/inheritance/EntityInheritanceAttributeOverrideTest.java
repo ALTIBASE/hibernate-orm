@@ -41,9 +41,9 @@ public class EntityInheritanceAttributeOverrideTest extends BaseEntityManagerFun
 	@Override
 	public Class<?>[] getAnnotatedClasses() {
 		return new Class[] {
-					CategoryEntity.class,
-					TaxonEntity.class,
-					AbstractEntity.class
+				CategoryEntity.class,
+				TaxonEntity.class,
+				AbstractEntity.class
 		};
 	}
 

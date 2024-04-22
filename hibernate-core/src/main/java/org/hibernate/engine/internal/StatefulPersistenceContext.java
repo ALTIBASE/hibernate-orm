@@ -73,6 +73,9 @@ import org.hibernate.type.CollectionType;
 
 import org.jboss.logging.Logger;
 
+import static org.hibernate.engine.internal.ManagedTypeHelper.asPersistentAttributeInterceptable;
+import static org.hibernate.engine.internal.ManagedTypeHelper.isPersistentAttributeInterceptable;
+
 /**
  * A <strong>stateful</strong> implementation of the {@link PersistenceContext} contract meaning that we maintain this
  * state throughout the life of the persistence context.
@@ -232,13 +235,9 @@ public class StatefulPersistenceContext implements PersistenceContext {
 			} );
 		}
 
-		for ( Entry<Object, EntityEntry> objectEntityEntryEntry : entityEntryContext.reentrantSafeEntityEntries() ) {
-			if ( objectEntityEntryEntry.getKey() instanceof PersistentAttributeInterceptable ) {
-				final PersistentAttributeInterceptor interceptor = ( (PersistentAttributeInterceptable) objectEntityEntryEntry.getKey() ).$$_hibernate_getInterceptor();
-				if ( interceptor instanceof LazyAttributeLoadingInterceptor ) {
-					( (LazyAttributeLoadingInterceptor) interceptor ).unsetSession();
-				}
-			}
+		for ( Entry<Object, EntityEntry> objectEntityEntryEntry : entityEntryContext.reentrantSafeEntityEntries() ) {//TODO make this a forEach process within the container
+			//type-cache-pollution agent: always check for EnhancedEntity type first.
+			ManagedTypeHelper.processIfPersistentAttributeInterceptable( objectEntityEntryEntry.getKey(), StatefulPersistenceContext::unsetSession, null );
 		}
 
 		final SharedSessionContractImplementor session = getSession();
@@ -267,6 +266,13 @@ public class StatefulPersistenceContext implements PersistenceContext {
 			loadContexts.cleanup();
 		}
 		naturalIdXrefDelegate = null;
+	}
+
+	private static void unsetSession(PersistentAttributeInterceptable persistentAttributeInterceptable, Object ignoredParam) {
+		final PersistentAttributeInterceptor interceptor = persistentAttributeInterceptable.$$_hibernate_getInterceptor();
+		if ( interceptor instanceof LazyAttributeLoadingInterceptor ) {
+			( (LazyAttributeLoadingInterceptor) interceptor ).unsetSession();
+		}
 	}
 
 	@Override
@@ -605,9 +611,8 @@ public class StatefulPersistenceContext implements PersistenceContext {
 			}
 
 			// or an uninitialized enhanced entity ("bytecode proxy")...
-			if ( value instanceof PersistentAttributeInterceptable ) {
-				final PersistentAttributeInterceptable bytecodeProxy = (PersistentAttributeInterceptable) value;
-				final BytecodeLazyAttributeInterceptor interceptor = (BytecodeLazyAttributeInterceptor) bytecodeProxy.$$_hibernate_getInterceptor();
+			if ( isPersistentAttributeInterceptable( value ) ) {
+				final BytecodeLazyAttributeInterceptor interceptor = (BytecodeLazyAttributeInterceptor) asPersistentAttributeInterceptable( value ).$$_hibernate_getInterceptor();
 				if ( interceptor != null ) {
 					interceptor.setSession( getSession() );
 				}
@@ -673,9 +678,8 @@ public class StatefulPersistenceContext implements PersistenceContext {
 			//initialize + unwrap the object and return it
 			return li.getImplementation();
 		}
-		else if ( maybeProxy instanceof PersistentAttributeInterceptable ) {
-			final PersistentAttributeInterceptable interceptable = (PersistentAttributeInterceptable) maybeProxy;
-			final PersistentAttributeInterceptor interceptor = interceptable.$$_hibernate_getInterceptor();
+		else if ( isPersistentAttributeInterceptable( maybeProxy ) ) {
+			final PersistentAttributeInterceptor interceptor = asPersistentAttributeInterceptable( maybeProxy ).$$_hibernate_getInterceptor();
 			if ( interceptor instanceof EnhancementAsProxyLazinessInterceptor ) {
 				( (EnhancementAsProxyLazinessInterceptor) interceptor ).forceInitialize( maybeProxy, null );
 			}
@@ -2113,8 +2117,8 @@ public class StatefulPersistenceContext implements PersistenceContext {
 			final Object[] localNaturalIdValues = getNaturalIdXrefDelegate().removeNaturalIdCrossReference(
 					persister,
 					id,
-					naturalIdValues
-			);
+					naturalIdValues,
+					true);
 
 			return localNaturalIdValues != null ? localNaturalIdValues : naturalIdValues;
 		}
@@ -2231,11 +2235,12 @@ public class StatefulPersistenceContext implements PersistenceContext {
 		}
 
 		@Override
-		public void handleEviction(Object object, EntityPersister persister, Serializable identifier) {
+		public void handleEviction(Object object, EntityPersister persister, Serializable identifier, boolean evictOnNaturalIdCache) {
 			getNaturalIdXrefDelegate().removeNaturalIdCrossReference(
 					persister,
 					identifier,
-					findCachedNaturalId( persister, identifier )
+					findCachedNaturalId( persister, identifier ),
+					evictOnNaturalIdCache
 			);
 		}
 	};

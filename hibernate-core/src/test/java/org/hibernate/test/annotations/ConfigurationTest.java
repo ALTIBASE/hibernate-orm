@@ -30,8 +30,8 @@ import static org.junit.Assert.fail;
  * @author Emmanuel Bernard
  */
 public class ConfigurationTest {
-	@Test
-	public void testDeclarativeMix()  {
+    @Test
+	public void testDeclarativeMix() {
 		Configuration cfg = new Configuration();
 		cfg.configure( "org/hibernate/test/annotations/hibernate.cfg.xml" );
 		cfg.setProperty( Environment.HBM2DDL_AUTO, "create-drop" );
@@ -86,7 +86,7 @@ public class ConfigurationTest {
 	}
 
 	@Test
-	public void testPrecedenceHbm()  {
+	public void testPrecedenceHbm() {
 		Configuration cfg = new Configuration();
 		cfg.configure( "org/hibernate/test/annotations/hibernate.cfg.xml" );
 		cfg.setProperty( Environment.HBM2DDL_AUTO, "create-drop" );

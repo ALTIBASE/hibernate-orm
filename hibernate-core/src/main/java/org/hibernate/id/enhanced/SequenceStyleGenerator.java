@@ -12,11 +12,11 @@ import java.util.Properties;
 
 import org.hibernate.HibernateException;
 import org.hibernate.MappingException;
-import org.hibernate.boot.SchemaAutoTooling;
 import org.hibernate.boot.model.naming.Identifier;
 import org.hibernate.boot.model.relational.Database;
 import org.hibernate.boot.model.relational.QualifiedName;
 import org.hibernate.boot.model.relational.QualifiedNameParser;
+import org.hibernate.boot.model.relational.SqlStringGenerationContext;
 import org.hibernate.cfg.AvailableSettings;
 import org.hibernate.dialect.Dialect;
 import org.hibernate.engine.config.spi.ConfigurationService;
@@ -24,7 +24,6 @@ import org.hibernate.engine.config.spi.StandardConverters;
 import org.hibernate.engine.jdbc.env.spi.JdbcEnvironment;
 import org.hibernate.engine.spi.SharedSessionContractImplementor;
 import org.hibernate.id.BulkInsertionCapableIdentifierGenerator;
-import org.hibernate.id.Configurable;
 import org.hibernate.id.IdentifierGenerator;
 import org.hibernate.id.PersistentIdentifierGenerator;
 import org.hibernate.id.SequenceMismatchStrategy;
@@ -101,7 +100,7 @@ import org.jboss.logging.Logger;
  * @author Lukasz Antoniak (lukasz dot antoniak at gmail dot com)
  */
 public class SequenceStyleGenerator
-		implements PersistentIdentifierGenerator, BulkInsertionCapableIdentifierGenerator, Configurable {
+		implements PersistentIdentifierGenerator, BulkInsertionCapableIdentifierGenerator {
 
 	private static final CoreMessageLogger LOG = Logger.getMessageLogger(
 			CoreMessageLogger.class,
@@ -299,7 +298,17 @@ public class SequenceStyleGenerator
 				incrementSize,
 				ConfigurationHelper.getInt( INITIAL_PARAM, params, -1 )
 		);
-		this.databaseStructure.prepare( optimizer );
+		this.databaseStructure.configure( optimizer );
+	}
+
+	@Override
+	public void registerExportables(Database database) {
+		databaseStructure.registerExportables( database );
+	}
+
+	@Override
+	public void initialize(SqlStringGenerationContext context) {
+		this.databaseStructure.initialize( context );
 	}
 
 	/**
@@ -529,18 +538,9 @@ public class SequenceStyleGenerator
 	// PersistentIdentifierGenerator implementation ~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 	@Override
+	@Deprecated
 	public Object generatorKey() {
 		return databaseStructure.getName();
-	}
-
-	@Override
-	public String[] sqlCreateStrings(Dialect dialect) throws HibernateException {
-		return databaseStructure.sqlCreateStrings( dialect );
-	}
-
-	@Override
-	public String[] sqlDropStrings(Dialect dialect) throws HibernateException {
-		return databaseStructure.sqlDropStrings( dialect );
 	}
 
 
@@ -556,13 +556,8 @@ public class SequenceStyleGenerator
 	}
 
 	@Override
-	public String determineBulkInsertionIdentifierGenerationSelectFragment(Dialect dialect) {
-		return dialect.getSelectSequenceNextValString( getDatabaseStructure().getName() );
-	}
-
-	@Override
-	public void registerExportables(Database database) {
-		databaseStructure.registerExportables( database );
+	public String determineBulkInsertionIdentifierGenerationSelectFragment(SqlStringGenerationContext context) {
+		return context.getDialect().getSelectSequenceNextValString( context.format( getDatabaseStructure().getPhysicalName() ) );
 	}
 
 	/**
