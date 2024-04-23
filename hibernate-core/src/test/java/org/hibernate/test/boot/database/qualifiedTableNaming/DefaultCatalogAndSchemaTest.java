@@ -68,6 +68,7 @@ import org.hibernate.hql.spi.id.local.LocalTemporaryTableBulkIdStrategy;
 import org.hibernate.id.IdentifierGenerator;
 import org.hibernate.persister.entity.AbstractEntityPersister;
 import org.hibernate.service.spi.ServiceRegistryImplementor;
+import org.hibernate.testing.*;
 import org.hibernate.tool.hbm2ddl.SchemaExport;
 import org.hibernate.tool.schema.TargetType;
 import org.hibernate.tool.schema.internal.exec.ScriptTargetOutputToWriter;
@@ -76,11 +77,7 @@ import org.hibernate.tool.schema.spi.SchemaManagementToolCoordinator;
 import org.hibernate.tool.schema.spi.ScriptTargetOutput;
 import org.hibernate.tool.schema.spi.TargetDescriptor;
 
-import org.hibernate.testing.AfterClassOnce;
-import org.hibernate.testing.BeforeClassOnce;
 import org.hibernate.testing.SkipForDialect;
-import org.hibernate.testing.SkipForDialect;
-import org.hibernate.testing.TestForIssue;
 import org.hibernate.testing.jdbc.SharedDriverManagerConnectionProviderImpl;
 import org.hibernate.testing.junit4.CustomParameterized;
 import org.junit.Test;
@@ -97,6 +94,7 @@ import org.junit.runners.Parameterized;
 		comment = "MariaDB < 10.3 doesn't support sequences")
 @SkipForDialect(value = MariaDB102Dialect.class, strictMatching = true,
 		comment = "MariaDB < 10.3 doesn't support sequences")
+@RequiresDialectFeature(DialectChecks.SupportsIdentityColumns.class)
 public class DefaultCatalogAndSchemaTest {
 
 	private static final String SQL_QUOTE_CHARACTER_CLASS = "([`\"]|\\[|\\])";

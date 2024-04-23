@@ -1,6 +1,8 @@
 package org.hibernate.query.criteria.internal.hhh14916;
 
 import org.hibernate.jpa.test.BaseEntityManagerFunctionalTestCase;
+import org.hibernate.testing.DialectChecks;
+import org.hibernate.testing.RequiresDialectFeature;
 import org.hibernate.testing.TestForIssue;
 import static org.junit.Assert.assertEquals;
 import org.junit.Before;
@@ -15,6 +17,7 @@ import javax.persistence.criteria.Predicate;
 import javax.persistence.criteria.Root;
 
 @TestForIssue( jiraKey = "HHH-14916" )
+@RequiresDialectFeature(DialectChecks.SupportsIdentityColumns.class)
 public class HHH14916Test extends BaseEntityManagerFunctionalTestCase {
 	
 	@Before

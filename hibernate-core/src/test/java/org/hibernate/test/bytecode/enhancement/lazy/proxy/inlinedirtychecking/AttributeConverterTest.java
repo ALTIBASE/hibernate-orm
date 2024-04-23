@@ -21,7 +21,9 @@ import org.hibernate.boot.MetadataSources;
 import org.hibernate.boot.registry.StandardServiceRegistryBuilder;
 import org.hibernate.cfg.AvailableSettings;
 
+import org.hibernate.testing.DialectChecks;
 import org.hibernate.testing.FailureExpected;
+import org.hibernate.testing.RequiresDialectFeature;
 import org.hibernate.testing.TestForIssue;
 import org.hibernate.testing.bytecode.enhancement.BytecodeEnhancerRunner;
 import org.hibernate.testing.bytecode.enhancement.CustomEnhancementContext;
@@ -39,6 +41,7 @@ import static org.hamcrest.MatcherAssert.assertThat;
 @RunWith(BytecodeEnhancerRunner.class)
 @CustomEnhancementContext({ DirtyCheckEnhancementContext.class })
 @TestForIssue( jiraKey = "HHH-13766")
+@RequiresDialectFeature(DialectChecks.SupportsIdentityColumns.class)
 public class AttributeConverterTest extends BaseNonConfigCoreFunctionalTestCase {
 	@Override
 	protected void configureStandardServiceRegistryBuilder(StandardServiceRegistryBuilder ssrb) {
